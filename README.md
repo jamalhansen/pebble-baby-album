@@ -30,8 +30,8 @@ A local-first CLI tool and web viewer that turns quick, messy notes into structu
 
 **1. Clone and install**
 ```bash
-git clone <this-repo>
-cd baby-journal
+git clone https://github.com/jamalhansen/pebble-baby-album
+cd pebble-baby-album
 uv sync
 uv pip install -e .
 ```
@@ -208,7 +208,7 @@ Multiple entries per day are separated with `---`. Frontmatter is merged on appe
 ## Project Structure
 
 ```
-baby-journal/
+pebble-baby-album/
 ├── src/pebble/
 │   ├── cli.py               # Typer CLI (pebble command)
 │   ├── models.py            # Pydantic data models
