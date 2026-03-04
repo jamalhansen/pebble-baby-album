@@ -153,6 +153,14 @@ h2 { font-size: 1.2rem; margin: 1.5rem 0 0.8rem; }
   margin-bottom: 1rem;
 }
 
+.photo-img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: var(--radius);
+  margin-bottom: 0.75rem;
+}
+
 .photo-path {
   font-family: var(--mono);
   font-size: 0.8rem;

@@ -356,7 +356,7 @@ def serve(
     console.print(f"[bold green]pebble web viewer[/] starting at [cyan]http://localhost:{actual_port}[/]")
     console.print("[dim]Press Ctrl+C to stop.[/]")
 
-    from web.app import create_app
+    from pebble.web.app import create_app
     flask_app = create_app(config)
     flask_app.run(host="127.0.0.1", port=actual_port, debug=False)
 

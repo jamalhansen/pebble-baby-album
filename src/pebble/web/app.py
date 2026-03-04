@@ -2,7 +2,7 @@
 from datetime import date
 from pathlib import Path
 
-from flask import Flask, render_template, request, abort
+from flask import Flask, render_template, request, abort, send_from_directory
 
 from pebble.config import Config
 from pebble.models import MilestoneTag, MOOD_EMOJI
@@ -16,6 +16,20 @@ def create_app(config: Config) -> Flask:
     static_dir = Path(__file__).parent / "static"
     app = Flask(__name__, template_folder=str(template_dir), static_folder=str(static_dir))
     app.config["JOURNAL_CONFIG"] = config
+
+    @app.template_filter("photo_url")
+    def photo_url_filter(file_path: str) -> str:
+        """Convert an absolute photo path to a /photo/... URL."""
+        try:
+            rel = Path(file_path).relative_to(config.storage.processed_dir)
+            return f"/photo/{rel}"
+        except ValueError:
+            return ""
+
+    @app.route("/photo/<path:rel_path>")
+    def serve_photo(rel_path: str):
+        """Serve a photo from the processed directory."""
+        return send_from_directory(config.storage.processed_dir, rel_path)
 
     @app.context_processor
     def inject_globals():

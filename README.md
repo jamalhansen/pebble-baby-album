@@ -212,15 +212,15 @@ pebble-baby-album/
 ├── src/pebble/
 │   ├── cli.py               # Typer CLI (pebble command)
 │   ├── models.py            # Pydantic data models
-│   ├── agents.py            # PydanticAI agents (journal, vision, summary)
+│   ├── agents.py            # Ollama-backed structuring agents
 │   ├── storage.py           # Read/write/search markdown files
 │   ├── inbox.py             # Photo inbox batch processing
 │   ├── summary.py           # Weekly/monthly summary generation
-│   └── config.py            # Config loading
-├── web/
-│   ├── app.py               # Flask web viewer (read-only)
-│   ├── templates/           # Jinja2 HTML templates
-│   └── static/style.css     # Warm editorial stylesheet
+│   ├── config.py            # Config loading
+│   └── web/
+│       ├── app.py           # Flask web viewer (read-only)
+│       ├── templates/       # Jinja2 HTML templates
+│       └── static/          # Stylesheet
 └── tests/
     ├── test_storage.py
     ├── test_agents.py

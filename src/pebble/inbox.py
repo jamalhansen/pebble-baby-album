@@ -108,23 +108,27 @@ def process_inbox(
 
             photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
 
-            if verbose:
-                console.print(f"  [dim]{photo_desc.description[:120]}…[/]")
-
-            age_weeks = config.age_weeks(photo_date)
-            entry = JournalEntry(
-                date=photo_date,
-                age_weeks=age_weeks,
-                milestone_tags=[],
-                mood=Mood.TENDER,
-                raw_input=f"[inbox: {image_path.name}]",
-                narrative=f"Photo added from inbox: {image_path.name}",
-                photos=[photo_desc],
-            )
-
-            if not dry_run:
-                append_entry(entry, config.storage.journal_dir)
+            if dry_run:
+                console.print(f"  [dim]Description:[/] {photo_desc.description}")
                 dest = _dest_path(config.storage.processed_dir, photo_date, image_path)
+                console.print(f"  [dim]Would file to:[/] {dest.relative_to(config.storage.processed_dir.parent)}")
+            else:
+                if verbose:
+                    console.print(f"  [dim]{photo_desc.description[:120]}…[/]")
+
+                age_weeks = config.age_weeks(photo_date)
+                dest = _dest_path(config.storage.processed_dir, photo_date, image_path)
+                photo_desc.file_path = str(dest)  # store final path, not inbox path
+                entry = JournalEntry(
+                    date=photo_date,
+                    age_weeks=age_weeks,
+                    milestone_tags=[],
+                    mood=Mood.TENDER,
+                    raw_input=f"[inbox: {image_path.name}]",
+                    narrative=f"Photo added from inbox: {image_path.name}",
+                    photos=[photo_desc],
+                )
+                append_entry(entry, config.storage.journal_dir)
                 shutil.move(str(image_path), dest)
                 console.print(f"  [green]✓[/] → {dest.relative_to(config.storage.processed_dir.parent)}")
 

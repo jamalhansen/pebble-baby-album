@@ -23,7 +23,12 @@
   <h2>Photos</h2>
   {% for photo in entry.photos %}
   <div class="photo-card">
+    {% set url = photo.file_path | photo_url %}
+    {% if url %}
+    <img src="{{ url }}" alt="{{ photo.description }}" class="photo-img">
+    {% else %}
     <div class="photo-path">📷 {{ photo.file_path }}</div>
+    {% endif %}
     <p class="photo-description">{{ photo.description }}</p>
   </div>
   {% endfor %}

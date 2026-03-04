@@ -119,15 +119,16 @@ baby-journal/                    # Repo — code only, no personal data
 │       ├── inbox.py             # Photo inbox batch processing
 │       ├── summary.py           # Weekly/monthly summary generation
 │       └── config.py            # Config loading, age_weeks computation
-├── web/
-│   ├── app.py                   # Flask app (read-only)
-│   ├── templates/
-│   │   ├── base.html
-│   │   ├── index.html           # Timeline view
-│   │   ├── entry.html           # Single entry view
-│   │   └── milestones.html      # Firsts timeline
-│   └── static/
-│       └── style.css
+│   └── web/
+│       ├── __init__.py
+│       ├── app.py               # Flask app (read-only)
+│       ├── templates/
+│       │   ├── base.html
+│       │   ├── index.html       # Timeline view
+│       │   ├── entry.html       # Single entry view
+│       │   └── milestones.html  # Firsts timeline
+│       └── static/
+│           └── style.css
 └── tests/
     ├── test_agents.py
     ├── test_storage.py

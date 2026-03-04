@@ -35,6 +35,12 @@ MOOD_EMOJI = {
 }
 
 
+class EntryMetadata(BaseModel):
+    """What the AI returns: just classification. Narrative comes from the parent's raw text."""
+    milestone_tags: list[MilestoneTag]
+    mood: Mood
+
+
 class PhotoDescription(BaseModel):
     file_path: str
     description: str
