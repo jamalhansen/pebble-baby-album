@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Search – {{ baby_name }}'s Journal{% endblock %}
+{% block content %}
+<h1>Search</h1>
+
+<form class="search-form" method="get" action="/search">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search entries…" />
+  <select name="tag">
+    <option value="">All tags</option>
+    <option value="motor-skills" {% if tag == 'motor-skills' %}selected{% endif %}>Motor skills</option>
+    <option value="social-emotional" {% if tag == 'social-emotional' %}selected{% endif %}>Social / emotional</option>
+    <option value="cognitive" {% if tag == 'cognitive' %}selected{% endif %}>Cognitive</option>
+    <option value="language" {% if tag == 'language' %}selected{% endif %}>Language</option>
+    <option value="feeding" {% if tag == 'feeding' %}selected{% endif %}>Feeding</option>
+    <option value="sleep" {% if tag == 'sleep' %}selected{% endif %}>Sleep</option>
+    <option value="health" {% if tag == 'health' %}selected{% endif %}>Health</option>
+    <option value="first" {% if tag == 'first' %}selected{% endif %}>Firsts</option>
+  </select>
+  <button type="submit">Search</button>
+</form>
+
+{% if results is defined %}
+  {% if not results %}
+    <p class="empty">No results found.</p>
+  {% else %}
+    <p class="result-count">{{ results|length }} result{% if results|length != 1 %}s{% endif %}</p>
+    <div class="entry-list">
+    {% for entry in results %}
+      <article class="entry-card">
+        <div class="entry-meta">
+          <a class="entry-date" href="/entry/{{ entry.date }}">{{ entry.date }}</a>
+          <span class="entry-week">week {{ entry.age_weeks }}</span>
+          <span class="entry-mood">{{ mood_emoji[entry.mood] }} {{ entry.mood.value }}</span>
+        </div>
+        <div class="entry-tags">
+          {% for t in entry.milestone_tags %}
+            <span class="tag tag--{{ t.value }}">{{ t.value }}</span>
+          {% endfor %}
+        </div>
+        <p class="entry-preview">{{ entry.narrative.split('\n')[0][:200] }}</p>
+      </article>
+    {% endfor %}
+    </div>
+  {% endif %}
+{% endif %}
+{% endblock %}

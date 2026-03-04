@@ -48,3 +48,16 @@ Thumbs.db
 *.mov
 *.wmv
 
+# pebble — never commit personal data
+journal/
+config.toml
+
+# Claude AI instructions (private, project-specific)
+CLAUDE.md
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.date }} – {{ baby_name }}'s Journal{% endblock %}
+{% block content %}
+<div class="entry-header">
+  <div class="entry-meta">
+    <span class="entry-date">{{ entry.date }}</span>
+    <span class="entry-week">week {{ entry.age_weeks }}</span>
+    <span class="entry-mood">{{ mood_emoji[entry.mood] }} {{ entry.mood.value }}</span>
+  </div>
+  <div class="entry-tags">
+    {% for tag in entry.milestone_tags %}
+      <span class="tag tag--{{ tag.value }}">{{ tag.value }}</span>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="entry-body">
+  {{ entry.narrative }}
+</div>
+
+{% if entry.photos %}
+<section class="photos">
+  <h2>Photos</h2>
+  {% for photo in entry.photos %}
+  <div class="photo-card">
+    <div class="photo-path">📷 {{ photo.file_path }}</div>
+    <p class="photo-description">{{ photo.description }}</p>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="entry-nav">
+  <a href="/">&larr; Back to timeline</a>
+</div>
+{% endblock %}

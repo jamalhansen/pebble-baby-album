@@ -1,0 +1,32 @@
+[project]
+name = "pebble"
+version = "0.1.0"
+description = "Privacy-first local baby journal CLI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.1.3",
+    "pillow>=12.1.1",
+    "pydantic>=2.12.5",
+    "pydantic-ai>=1.65.0",
+    "python-frontmatter>=1.1.0",
+    "rich>=14.3.3",
+    "tomli>=2.0",
+    "typer>=0.24.1",
+]
+
+[dependency-groups]
+dev = [
+    "hatchling>=1.29.0",
+    "pytest>=9.0.2",
+]
+
+[project.scripts]
+pebble = "pebble.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pebble"]

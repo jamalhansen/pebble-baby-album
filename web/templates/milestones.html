@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Firsts – {{ baby_name }}'s Journal{% endblock %}
+{% block content %}
+<h1>✨ Firsts</h1>
+
+{% if not entries %}
+  <p class="empty">No "first" moments logged yet. Tag an entry with <code>first</code> to see it here.</p>
+{% endif %}
+
+<div class="milestone-timeline">
+{% for entry in entries %}
+  <div class="milestone-item">
+    <div class="milestone-dot"></div>
+    <div class="milestone-content">
+      <a class="entry-date" href="/entry/{{ entry.date }}">{{ entry.date }}</a>
+      <span class="entry-week">week {{ entry.age_weeks }}</span>
+      <p>{{ entry.narrative.split('\n')[0][:160] }}{% if entry.narrative|length > 160 %}…{% endif %}</p>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

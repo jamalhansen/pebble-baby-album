@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{{ baby_name }}'s Journal{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a class="site-title" href="/">{{ baby_name }}'s Journal</a>
+      <nav>
+        <a href="/">Timeline</a>
+        <a href="/milestones">Firsts</a>
+        <a href="/search">Search</a>
+      </nav>
+      <span class="local-badge">100% local</span>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>Everything stays on your device. No cloud. No telemetry.</p>
+  </footer>
+</body>
+</html>
