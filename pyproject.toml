@@ -14,6 +14,7 @@ dependencies = [
     "tomli>=2.0",
     "typer>=0.24.1",
     "local-first-common",
+    "pillow-heif>=1.3.0",
 ]
 
 [dependency-groups]

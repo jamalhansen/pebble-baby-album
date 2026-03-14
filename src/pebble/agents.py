@@ -1,10 +1,22 @@
 """Agents for journal structuring and photo description, using Ollama's native API."""
 import base64
+import io
 import json
+import time
 from datetime import date
 from pathlib import Path
 
 from ollama import AsyncClient
+from PIL import Image
+from pillow_heif import register_heif_opener
+from rich.console import Console
+
+register_heif_opener()
+
+_console = Console(stderr=True)
+
+# Vision models don't benefit from huge images; cap at this on the longest side.
+_MAX_VISION_PX = 1024
 
 from .config import Config
 from .models import EntryMetadata, JournalEntry, PhotoDescription, WeeklySummary
@@ -84,6 +96,22 @@ async def log_entry(
     )
 
 
+def _to_jpeg_bytes(image_path: Path) -> tuple[bytes, tuple[int, int], tuple[int, int]]:
+    """
+    Return (jpeg_bytes, original_size, final_size).
+
+    Resizes so the longest side is at most _MAX_VISION_PX before encoding.
+    """
+    with Image.open(image_path) as img:
+        original_size = img.size
+        img = img.convert("RGB")
+        img.thumbnail((_MAX_VISION_PX, _MAX_VISION_PX), Image.LANCZOS)
+        final_size = img.size
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        return buf.getvalue(), original_size, final_size
+
+
 async def describe_photo(
     image_path: Path,
     config: Config,
@@ -91,9 +119,20 @@ async def describe_photo(
 ) -> PhotoDescription:
     """Call the vision model and return a PhotoDescription."""
     model_name = model or config.models.vision_model
-    image_bytes = image_path.read_bytes()
+
+    t0 = time.monotonic()
+    image_bytes, orig_size, final_size = _to_jpeg_bytes(image_path)
+    t_convert = time.monotonic() - t0
+    kb = len(image_bytes) / 1024
+    _console.print(
+        f"  [dim]convert: {orig_size[0]}×{orig_size[1]} → {final_size[0]}×{final_size[1]}"
+        f"  |  {kb:.0f} KB  |  {t_convert:.2f}s[/]"
+    )
+
     image_b64 = base64.b64encode(image_bytes).decode()
 
+    _console.print(f"  [dim]calling {model_name} …[/]")
+    t1 = time.monotonic()
     client = AsyncClient(host=config.models.ollama_host)
     response = await client.chat(
         model=model_name,
@@ -107,6 +146,9 @@ async def describe_photo(
         ],
         format=PhotoDescription.model_json_schema(),
     )
+    t_llm = time.monotonic() - t1
+    _console.print(f"  [dim]llm: {t_llm:.1f}s[/]")
+
     data = json.loads(response.message.content)
     photo = PhotoDescription.model_validate(data)
     photo.file_path = str(image_path)
