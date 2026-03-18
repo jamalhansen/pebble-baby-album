@@ -1,12 +1,11 @@
 """Photo inbox — scan a folder, describe each photo, file it into the journal."""
 import asyncio
-import shutil
+import io
 from datetime import date, datetime
 from pathlib import Path
 from typing import Iterator
 
 from PIL import Image
-from pillow_heif import register_heif_opener
 from rich.console import Console
 
 from .agents import describe_photo
@@ -14,12 +13,11 @@ from .config import Config
 from .models import JournalEntry, Mood
 from .storage import append_entry
 
-register_heif_opener()
-
 console = Console()
 err_console = Console(stderr=True, style="red")
 
-SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"}
+SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+_MAX_VISION_PX = 1024
 
 
 def get_photo_date(image_path: Path) -> date:
@@ -55,21 +53,31 @@ def iter_inbox(inbox_dir: Path) -> Iterator[Path]:
     yield from sorted(paths, key=lambda p: p.name)
 
 
+def _save_as_jpeg(src: Path, dest: Path) -> None:
+    """Convert src to a 1024px-capped JPEG and write it to dest."""
+    with Image.open(src) as img:
+        img = img.convert("RGB")
+        img.thumbnail((_MAX_VISION_PX, _MAX_VISION_PX), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+    dest.write_bytes(buf.getvalue())
+
+
 def _dest_path(processed_dir: Path, photo_date: date, original: Path) -> Path:
     """
-    Build the destination path, handling filename collisions with a counter suffix.
+    Build the destination path (always .jpg), handling filename collisions.
 
     e.g. processed/2025-12-15/photo.jpg  →  processed/2025-12-15/photo-1.jpg
     """
     date_dir = processed_dir / photo_date.isoformat()
     date_dir.mkdir(parents=True, exist_ok=True)
-    dest = date_dir / original.name
+    dest = date_dir / (original.stem + ".jpg")
     if not dest.exists():
         return dest
-    stem, suffix = original.stem, original.suffix
+    stem = original.stem
     counter = 1
     while True:
-        candidate = date_dir / f"{stem}-{counter}{suffix}"
+        candidate = date_dir / f"{stem}-{counter}.jpg"
         if not candidate.exists():
             return candidate
         counter += 1
@@ -132,7 +140,8 @@ def process_inbox(
                     photos=[photo_desc],
                 )
                 append_entry(entry, config.storage.journal_dir)
-                shutil.move(str(image_path), dest)
+                _save_as_jpeg(image_path, dest)
+                image_path.unlink()
                 console.print(f"  [green]✓[/] → {dest.relative_to(config.storage.processed_dir.parent)}")
 
             processed += 1

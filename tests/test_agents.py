@@ -4,8 +4,6 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from pebble.models import EntryMetadata, JournalEntry, MilestoneTag, Mood, PhotoDescription, WeeklySummary
 from pebble.config import Config, BabyConfig, ModelsConfig, StorageConfig, WebConfig
 
@@ -136,14 +134,17 @@ class TestDescribePhoto:
         config = make_config(tmp_path)
 
         image_path = tmp_path / "test.jpg"
-        image_path.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 100)  # minimal JPEG header
+        image_path.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
 
         fixed_photo = PhotoDescription(
             file_path="will_be_overridden",
             description="Baby lying on a white blanket, smiling at camera.",
         )
 
-        with patch("pebble.agents.AsyncClient") as mock_client_class:
+        dummy_jpeg = b"\xff\xd8\xff\xe0" + b"\x00" * 16
+
+        with patch("pebble.agents.AsyncClient") as mock_client_class, \
+             patch("pebble.agents._to_jpeg_bytes", return_value=(dummy_jpeg, (3024, 4032), (768, 1024))):
             mock_client = MagicMock()
             mock_client.chat = AsyncMock(
                 return_value=make_ollama_response(fixed_photo.model_dump_json())

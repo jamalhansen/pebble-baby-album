@@ -2,9 +2,7 @@
 from datetime import date
 from pathlib import Path
 
-import pytest
-
-from pebble.models import JournalEntry, MilestoneTag, Mood, PhotoDescription
+from pebble.models import JournalEntry, MilestoneTag, Mood
 from pebble.storage import (
     append_entry,
     iter_entries,

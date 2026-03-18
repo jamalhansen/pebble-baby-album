@@ -8,18 +8,15 @@ from pathlib import Path
 
 from ollama import AsyncClient
 from PIL import Image
-from pillow_heif import register_heif_opener
 from rich.console import Console
 
-register_heif_opener()
+from .config import Config
+from .models import EntryMetadata, JournalEntry, PhotoDescription, WeeklySummary
 
 _console = Console(stderr=True)
 
 # Vision models don't benefit from huge images; cap at this on the longest side.
 _MAX_VISION_PX = 1024
-
-from .config import Config
-from .models import EntryMetadata, JournalEntry, PhotoDescription, WeeklySummary
 
 
 def model_from_name(name: str, config: Config) -> str:

@@ -1,14 +1,10 @@
 """Tests for inbox.py — photo inbox scanning and batch processing."""
-import asyncio
-import shutil
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from pebble.config import Config, BabyConfig, ModelsConfig, StorageConfig, WebConfig
-from pebble.models import JournalEntry, MilestoneTag, Mood, PhotoDescription
+from pebble.models import PhotoDescription
 from pebble.inbox import get_photo_date, iter_inbox, process_inbox, _dest_path
 
 BIRTH_DATE = date(2024, 1, 1)
@@ -182,14 +178,16 @@ class TestProcessInbox:
 
         with patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)), \
              patch("pebble.inbox.append_entry") as mock_append, \
-             patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)):
+             patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)), \
+             patch("pebble.inbox._save_as_jpeg") as mock_save:
 
             processed, skipped = process_inbox(config)
 
         assert processed == 1
         assert skipped == 0
         mock_append.assert_called_once()
-        # Photo should be moved out of inbox
+        mock_save.assert_called_once()
+        # Photo should be deleted from inbox
         assert not photo.exists()
 
     def test_dry_run_does_not_save_or_move(self, tmp_path):
@@ -211,8 +209,8 @@ class TestProcessInbox:
 
     def test_skips_on_error_and_continues(self, tmp_path):
         config = make_config(tmp_path)
-        photo1 = make_photo(config.storage.inbox_dir, "a.jpg")
-        photo2 = make_photo(config.storage.inbox_dir, "b.jpg")
+        make_photo(config.storage.inbox_dir, "a.jpg")
+        make_photo(config.storage.inbox_dir, "b.jpg")
 
         call_count = 0
 
@@ -225,7 +223,8 @@ class TestProcessInbox:
 
         with patch("pebble.inbox.describe_photo", new=flaky_describe), \
              patch("pebble.inbox.append_entry"), \
-             patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)):
+             patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)), \
+             patch("pebble.inbox._save_as_jpeg"):
 
             processed, skipped = process_inbox(config)
 
@@ -255,7 +254,8 @@ class TestProcessInbox:
 
         with patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)), \
              patch("pebble.inbox.append_entry", side_effect=capture_append), \
-             patch("pebble.inbox.get_photo_date", return_value=exif_date):
+             patch("pebble.inbox.get_photo_date", return_value=exif_date), \
+             patch("pebble.inbox._save_as_jpeg"):
 
             process_inbox(config)
 
@@ -272,9 +272,10 @@ class TestProcessInbox:
 
         with patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)), \
              patch("pebble.inbox.append_entry"), \
-             patch("pebble.inbox.get_photo_date", return_value=photo_date):
+             patch("pebble.inbox.get_photo_date", return_value=photo_date), \
+             patch("pebble.inbox._save_as_jpeg") as mock_save:
 
             process_inbox(config)
 
-        expected = config.storage.processed_dir / "2025-12-15" / "photo.jpg"
-        assert expected.exists()
+        dest_arg = mock_save.call_args[0][1]
+        assert dest_arg == config.storage.processed_dir / "2025-12-15" / "photo.jpg"

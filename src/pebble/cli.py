@@ -13,7 +13,7 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 
 from .config import load_config
-from .models import MilestoneTag, Mood, MOOD_EMOJI
+from .models import MilestoneTag, MOOD_EMOJI
 from .storage import (
     append_entry,
     iter_entries,
@@ -133,10 +133,10 @@ def photo(
     model = model_from_name(model_name, config) if model_name else None
     photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
 
-    console.print(f"[dim]Photo described.[/]")
+    console.print("[dim]Photo described.[/]")
 
     if note:
-        console.print(f"[dim]Processing text note...[/]")
+        console.print("[dim]Processing text note...[/]")
         entry = asyncio.run(log_entry(note, entry_date, config, model=model))
         entry.photos.append(photo_desc)
     else:

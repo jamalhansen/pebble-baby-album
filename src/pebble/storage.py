@@ -133,7 +133,6 @@ def append_entry(entry: JournalEntry, journal_dir: Path) -> Path:
     # Build new section body (no frontmatter, just narrative + photos)
     new_section = entry.narrative
     if entry.photos:
-        import re as _re
         lines = ["\n\n## Photos"]
         for photo in entry.photos:
             lines.append(f"\n### {photo.file_path}\n")
