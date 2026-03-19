@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterator
 
 from PIL import Image
+from pillow_heif import register_heif_opener
 from rich.console import Console
 
 from .agents import describe_photo
@@ -13,10 +14,12 @@ from .config import Config
 from .models import JournalEntry, Mood
 from .storage import append_entry
 
+register_heif_opener()
+
 console = Console()
 err_console = Console(stderr=True, style="red")
 
-SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"}
 _MAX_VISION_PX = 1024
 
 

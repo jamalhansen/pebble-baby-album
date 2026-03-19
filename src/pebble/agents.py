@@ -8,10 +8,13 @@ from pathlib import Path
 
 from ollama import AsyncClient
 from PIL import Image
+from pillow_heif import register_heif_opener
 from rich.console import Console
 
 from .config import Config
 from .models import EntryMetadata, JournalEntry, PhotoDescription, WeeklySummary
+
+register_heif_opener()
 
 _console = Console(stderr=True)
 
