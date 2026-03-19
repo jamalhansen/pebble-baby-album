@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from pebble.models import EntryMetadata, JournalEntry, MilestoneTag, Mood, PhotoDescription, WeeklySummary
+from pebble.models import EntryMetadata, JournalEntry, MilestoneTag, Mood, WeeklySummary
 from pebble.config import Config, BabyConfig, ModelsConfig, StorageConfig, WebConfig
 from local_first_common.testing import MockProvider
 
