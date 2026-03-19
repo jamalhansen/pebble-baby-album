@@ -41,6 +41,11 @@ class EntryMetadata(BaseModel):
     mood: Mood
 
 
+class PhotoAnalysis(BaseModel):
+    """What the vision AI returns for a photo."""
+    description: str
+
+
 class PhotoDescription(BaseModel):
     file_path: str
     description: str

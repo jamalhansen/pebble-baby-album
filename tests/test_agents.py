@@ -1,13 +1,14 @@
-"""Tests for agents.py — mocks ollama.AsyncClient to avoid real Ollama calls."""
+"""Tests for agents.py — uses MockProvider to avoid real Ollama calls."""
 import asyncio
 from datetime import date
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 from pebble.models import EntryMetadata, JournalEntry, MilestoneTag, Mood, PhotoDescription, WeeklySummary
 from pebble.config import Config, BabyConfig, ModelsConfig, StorageConfig, WebConfig
+from local_first_common.testing import MockProvider
 
-BIRTH_DATE = date(2024, 1, 1)  # generic test date, not a real baby's birthday
+BIRTH_DATE = date(2024, 1, 1)
 
 
 def make_config(tmp_path: Path) -> Config:
@@ -38,13 +39,6 @@ def make_journal_entry(entry_date: date, config: Config) -> JournalEntry:
     )
 
 
-def make_ollama_response(payload: str) -> MagicMock:
-    """Build a fake ollama chat response whose message.content is payload."""
-    response = MagicMock()
-    response.message.content = payload
-    return response
-
-
 class TestLogEntry:
     def _meta_response(self):
         return EntryMetadata(
@@ -53,18 +47,12 @@ class TestLogEntry:
         ).model_dump_json()
 
     def test_log_entry_sets_date_and_age(self, tmp_path):
-        """log_entry should set date/age from config, not from the model."""
         config = make_config(tmp_path)
         entry_date = date(2025, 12, 15)
         expected_age = config.age_weeks(entry_date)
 
-        with patch("pebble.agents.AsyncClient") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client.chat = AsyncMock(
-                return_value=make_ollama_response(self._meta_response())
-            )
-            mock_client_class.return_value = mock_client
-
+        mock_llm = MockProvider(response=self._meta_response())
+        with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
             entry = asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
@@ -73,17 +61,11 @@ class TestLogEntry:
         assert entry.raw_input == "grabbed my finger"
 
     def test_log_entry_uses_raw_text_as_narrative(self, tmp_path):
-        """Narrative should be the parent's exact words, not rewritten by the model."""
         config = make_config(tmp_path)
         entry_date = date(2025, 12, 15)
 
-        with patch("pebble.agents.AsyncClient") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client.chat = AsyncMock(
-                return_value=make_ollama_response(self._meta_response())
-            )
-            mock_client_class.return_value = mock_client
-
+        mock_llm = MockProvider(response=self._meta_response())
+        with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
             entry = asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
@@ -93,13 +75,8 @@ class TestLogEntry:
         config = make_config(tmp_path)
         entry_date = date(2025, 12, 15)
 
-        with patch("pebble.agents.AsyncClient") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client.chat = AsyncMock(
-                return_value=make_ollama_response(self._meta_response())
-            )
-            mock_client_class.return_value = mock_client
-
+        mock_llm = MockProvider(response=self._meta_response())
+        with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
             entry = asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
@@ -107,26 +84,17 @@ class TestLogEntry:
         assert MilestoneTag.FIRST in entry.milestone_tags
 
     def test_log_entry_passes_baby_context_in_prompt(self, tmp_path):
-        """The prompt sent to the model should include baby name and date."""
         config = make_config(tmp_path)
         entry_date = date(2025, 12, 15)
-        captured_messages = []
 
-        async def fake_chat(model, messages, format):
-            captured_messages.extend(messages)
-            return make_ollama_response(self._meta_response())
-
-        with patch("pebble.agents.AsyncClient") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client.chat = AsyncMock(side_effect=fake_chat)
-            mock_client_class.return_value = mock_client
-
+        mock_llm = MockProvider(response=self._meta_response())
+        with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
             asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
-        user_prompt = next(m["content"] for m in captured_messages if m["role"] == "user")
-        assert "Test Baby" in user_prompt
-        assert "2025-12-15" in user_prompt
+        system, user = mock_llm.calls[0]
+        assert "Test Baby" in user
+        assert "2025-12-15" in user
 
 
 class TestDescribePhoto:
@@ -136,21 +104,16 @@ class TestDescribePhoto:
         image_path = tmp_path / "test.jpg"
         image_path.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
 
-        fixed_photo = PhotoDescription(
-            file_path="will_be_overridden",
+        from pebble.models import PhotoAnalysis
+        fixed_analysis = PhotoAnalysis(
             description="Baby lying on a white blanket, smiling at camera.",
         )
 
         dummy_jpeg = b"\xff\xd8\xff\xe0" + b"\x00" * 16
 
-        with patch("pebble.agents.AsyncClient") as mock_client_class, \
+        mock_llm = MockProvider(response=fixed_analysis.model_dump_json())
+        with patch("pebble.agents._get_provider", return_value=mock_llm), \
              patch("pebble.agents._to_jpeg_bytes", return_value=(dummy_jpeg, (3024, 4032), (768, 1024))):
-            mock_client = MagicMock()
-            mock_client.chat = AsyncMock(
-                return_value=make_ollama_response(fixed_photo.model_dump_json())
-            )
-            mock_client_class.return_value = mock_client
-
             from pebble import agents
             photo = asyncio.run(agents.describe_photo(image_path, config))
 
@@ -167,20 +130,15 @@ class TestSummarizeEntries:
         entries = [make_journal_entry(date(2025, 12, 15 + i), config) for i in range(3)]
 
         fixed_summary = WeeklySummary(
-            week_start=date(2025, 1, 1),  # will be overridden
-            week_end=date(2025, 1, 7),    # will be overridden
+            week_start=date(2025, 1, 1),
+            week_end=date(2025, 1, 7),
             highlights=["Great week"],
             milestones_reached=["First grip"],
             narrative="A wonderful week.",
         )
 
-        with patch("pebble.agents.AsyncClient") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client.chat = AsyncMock(
-                return_value=make_ollama_response(fixed_summary.model_dump_json())
-            )
-            mock_client_class.return_value = mock_client
-
+        mock_llm = MockProvider(response=fixed_summary.model_dump_json())
+        with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
             summary = asyncio.run(
                 agents.summarize_entries(entries, week_start, week_end, config)

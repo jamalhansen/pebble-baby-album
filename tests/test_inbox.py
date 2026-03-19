@@ -262,6 +262,7 @@ class TestProcessInbox:
         assert len(captured_entries) == 1
         assert captured_entries[0].date == exif_date
         assert captured_entries[0].photos[0].description == fixed_desc.description
+        assert captured_entries[0].photos[0].taken_at == exif_date
 
     def test_photo_moved_to_date_subdir(self, tmp_path):
         config = make_config(tmp_path)

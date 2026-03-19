@@ -1,18 +1,23 @@
-"""Agents for journal structuring and photo description, using Ollama's native API."""
+"""Agents for journal structuring and photo description, using standardized providers."""
 import base64
 import io
-import json
 import time
 from datetime import date
 from pathlib import Path
 
-from ollama import AsyncClient
 from PIL import Image
 from pillow_heif import register_heif_opener
 from rich.console import Console
 
+from local_first_common.providers.ollama import OllamaProvider
 from .config import Config
-from .models import EntryMetadata, JournalEntry, PhotoDescription, WeeklySummary
+from .models import (
+    EntryMetadata,
+    JournalEntry,
+    PhotoAnalysis,
+    PhotoDescription,
+    WeeklySummary,
+)
 
 register_heif_opener()
 
@@ -58,16 +63,17 @@ _SUMMARY_SYSTEM = (
 )
 
 
+def _get_provider(config: Config, model_name: str) -> OllamaProvider:
+    return OllamaProvider(model=model_name)
+
+
 async def log_entry(
     raw_text: str,
     entry_date: date,
     config: Config,
     model: str | None = None,
 ) -> JournalEntry:
-    """Classify the parent's note (tags + mood) and build a JournalEntry.
-
-    The narrative is the parent's own words — the model only classifies, never writes.
-    """
+    """Classify the parent's note (tags + mood) and build a JournalEntry."""
     model_name = model or config.models.text_model
     age_weeks = config.age_weeks(entry_date)
     prompt = (
@@ -75,17 +81,15 @@ async def log_entry(
         f"Today's date: {entry_date.isoformat()}\n\n"
         f"Parent's note:\n{raw_text}"
     )
-    client = AsyncClient(host=config.models.ollama_host)
-    response = await client.chat(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": _JOURNAL_SYSTEM},
-            {"role": "user", "content": prompt},
-        ],
-        format=EntryMetadata.model_json_schema(),
+    
+    llm = _get_provider(config, model_name)
+    meta_dict = await llm.acomplete(
+        system=_JOURNAL_SYSTEM,
+        user=prompt,
+        response_model=EntryMetadata,
     )
-    data = json.loads(response.message.content)
-    meta = EntryMetadata.model_validate(data)
+    meta = EntryMetadata.model_validate(meta_dict)
+    
     return JournalEntry(
         date=entry_date,
         age_weeks=age_weeks,
@@ -133,26 +137,23 @@ async def describe_photo(
 
     _console.print(f"  [dim]calling {model_name} …[/]")
     t1 = time.monotonic()
-    client = AsyncClient(host=config.models.ollama_host)
-    response = await client.chat(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": _VISION_SYSTEM},
-            {
-                "role": "user",
-                "content": f"Please describe this photo of {config.baby.name} for the journal.",
-                "images": [image_b64],
-            },
-        ],
-        format=PhotoDescription.model_json_schema(),
+    
+    llm = _get_provider(config, model_name)
+    photo_dict = await llm.acomplete(
+        system=_VISION_SYSTEM,
+        user=f"Please describe this photo of {config.baby.name} for the journal.",
+        response_model=PhotoAnalysis,
+        images=[image_b64],
     )
+    analysis = PhotoAnalysis.model_validate(photo_dict)
+    
     t_llm = time.monotonic() - t1
     _console.print(f"  [dim]llm: {t_llm:.1f}s[/]")
 
-    data = json.loads(response.message.content)
-    photo = PhotoDescription.model_validate(data)
-    photo.file_path = str(image_path)
-    return photo
+    return PhotoDescription(
+        file_path=str(image_path),
+        description=analysis.description,
+    )
 
 
 async def summarize_entries(
@@ -173,17 +174,15 @@ async def summarize_entries(
         f"Week: {week_start.isoformat()} to {week_end.isoformat()}\n\n"
         f"Journal entries:\n\n" + "\n\n".join(entry_texts)
     )
-    client = AsyncClient(host=config.models.ollama_host)
-    response = await client.chat(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": _SUMMARY_SYSTEM},
-            {"role": "user", "content": prompt},
-        ],
-        format=WeeklySummary.model_json_schema(),
+    
+    llm = _get_provider(config, model_name)
+    summary_dict = await llm.acomplete(
+        system=_SUMMARY_SYSTEM,
+        user=prompt,
+        response_model=WeeklySummary,
     )
-    data = json.loads(response.message.content)
-    summary = WeeklySummary.model_validate(data)
+    summary = WeeklySummary.model_validate(summary_dict)
+    
     summary.week_start = week_start
     summary.week_end = week_end
     return summary

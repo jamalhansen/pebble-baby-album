@@ -133,6 +133,7 @@ def process_inbox(
                 age_weeks = config.age_weeks(photo_date)
                 dest = _dest_path(config.storage.processed_dir, photo_date, image_path)
                 photo_desc.file_path = str(dest)  # store final path, not inbox path
+                photo_desc.taken_at = photo_date
                 entry = JournalEntry(
                     date=photo_date,
                     age_weeks=age_weeks,

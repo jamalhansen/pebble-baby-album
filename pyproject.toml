@@ -13,8 +13,8 @@ dependencies = [
     "rich>=14.3.3",
     "tomli>=2.0",
     "typer>=0.24.1",
-    "local-first-common",
     "pillow-heif>=1.3.0",
+    "local-first-common",
 ]
 
 [dependency-groups]
@@ -34,4 +34,4 @@ build-backend = "hatchling.build"
 packages = ["src/pebble"]
 
 [tool.uv.sources]
-local-first-common = { git = "https://github.com/jamalhansen/local-first-common.git", rev = "main" }
+local-first-common = { path = "../local-first-common", editable = true }
