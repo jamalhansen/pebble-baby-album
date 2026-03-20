@@ -21,6 +21,7 @@ dependencies = [
 dev = [
     "hatchling>=1.29.0",
     "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
 ]
 
 [project.scripts]
