@@ -3,7 +3,7 @@ import asyncio
 import sys
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 from rich.console import Console
@@ -58,12 +58,16 @@ def log(
     config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
     date_str: Optional[str] = typer.Option(None, "--date", "-d", help="Entry date (YYYY-MM-DD)"),
     model_name: Optional[str] = typer.Option(None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Print result without saving"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Call LLM but do not save the entry. Print to stdout."),
+    no_llm: Annotated[bool, typer.Option("--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run.")] = False,
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full structured output"),
 ):
     """Log a new journal entry from text."""
     config = _get_config(config_path)
-    _run_ollama_check(config)
+    if no_llm:
+        dry_run = True
+    else:
+        _run_ollama_check(config)
 
     entry_date = date.fromisoformat(date_str) if date_str else date.today()
 
@@ -89,9 +93,20 @@ def log(
 
     console.print(f"[dim]Processing entry for {entry_date.isoformat()}...[/]")
 
-    from .agents import log_entry, model_from_name
-    model = model_from_name(model_name, config) if model_name else None
-    entry = asyncio.run(log_entry(raw_text, entry_date, config, model=model))
+    if no_llm:
+        from .models import JournalEntry, Mood
+        entry = JournalEntry(
+            date=entry_date,
+            age_weeks=config.age_weeks(entry_date),
+            milestone_tags=[],
+            mood=Mood.TENDER,
+            raw_input=raw_text,
+            narrative="[no-llm mock]",
+        )
+    else:
+        from .agents import log_entry, model_from_name
+        model = model_from_name(model_name, config) if model_name else None
+        entry = asyncio.run(log_entry(raw_text, entry_date, config, model=model))
 
     if verbose:
         console.print(entry.model_dump_json(indent=2))
@@ -115,11 +130,15 @@ def photo(
     config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
     date_str: Optional[str] = typer.Option(None, "--date", "-d", help="Entry date (YYYY-MM-DD)"),
     model_name: Optional[str] = typer.Option(None, "--model", "-m", help="Override Ollama vision model (e.g. llava:13b)"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Print result without saving"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Call LLM but do not save the entry. Print to stdout."),
+    no_llm: Annotated[bool, typer.Option("--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run.")] = False,
 ):
     """Add a photo (and optional note) to today's entry."""
     config = _get_config(config_path)
-    _run_ollama_check(config)
+    if no_llm:
+        dry_run = True
+    else:
+        _run_ollama_check(config)
 
     if not image_path.exists():
         err_console.print(f"[red]Image not found:[/] {image_path}")
@@ -127,21 +146,21 @@ def photo(
 
     entry_date = date.fromisoformat(date_str) if date_str else date.today()
 
-    console.print(f"[dim]Describing photo {image_path.name}...[/]")
+    from .models import JournalEntry, Mood, PhotoDescription
 
-    from .agents import describe_photo, log_entry, model_from_name
-    model = model_from_name(model_name, config) if model_name else None
-    photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
-
-    console.print("[dim]Photo described.[/]")
-
-    if note:
-        console.print("[dim]Processing text note...[/]")
-        entry = asyncio.run(log_entry(note, entry_date, config, model=model))
-        entry.photos.append(photo_desc)
+    if no_llm:
+        photo_desc = PhotoDescription(
+            file_path=str(image_path),
+            description="[no-llm mock photo description]",
+        )
     else:
-        # Create a minimal entry that just records the photo
-        from .models import JournalEntry, Mood
+        console.print(f"[dim]Describing photo {image_path.name}...[/]")
+        from .agents import describe_photo, log_entry, model_from_name
+        model = model_from_name(model_name, config) if model_name else None
+        photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
+        console.print("[dim]Photo described.[/]")
+
+    if no_llm or not note:
         age_weeks = config.age_weeks(entry_date)
         entry = JournalEntry(
             date=entry_date,
@@ -152,6 +171,12 @@ def photo(
             narrative=f"Photo added: {image_path.name}",
             photos=[photo_desc],
         )
+    else:
+        console.print("[dim]Processing text note...[/]")
+        from .agents import log_entry, model_from_name
+        model = model_from_name(model_name, config) if model_name else None
+        entry = asyncio.run(log_entry(note, entry_date, config, model=model))
+        entry.photos.append(photo_desc)
 
     if dry_run:
         console.print(Panel(photo_desc.description, title=f"Photo: {image_path.name} (dry run)", border_style="yellow"))
@@ -280,7 +305,8 @@ def summary(
     week: bool = typer.Option(False, "--week", "-w", help="Summarize current week"),
     month: bool = typer.Option(False, "--month", help="Summarize current month"),
     model_name: Optional[str] = typer.Option(None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Print result without saving to disk"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Call LLM but do not save summary to disk. Print to stdout."),
+    no_llm: Annotated[bool, typer.Option("--no-llm", help="Skip LLM call, use mock summary. Implies --dry-run.")] = False,
     config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
 ):
     """Generate a weekly or monthly summary."""
@@ -289,22 +315,37 @@ def summary(
         raise typer.Exit(1)
 
     config = _get_config(config_path)
-    _run_ollama_check(config)
+    if no_llm:
+        dry_run = True
+    else:
+        _run_ollama_check(config)
 
-    from .agents import model_from_name
-    from .summary import generate_summary
-    model = model_from_name(model_name, config) if model_name else None
-    try:
-        result = generate_summary(
-            config.storage.journal_dir,
-            config,
-            week=week,
-            write=not dry_run,
-            model=model,
+    if no_llm:
+        from datetime import date as _date
+        from .models import WeeklySummary
+        today = _date.today()
+        result = WeeklySummary(
+            week_start=today,
+            week_end=today,
+            highlights=["[no-llm mock highlight]"],
+            milestones_reached=[],
+            narrative="[no-llm mock summary]",
         )
-    except ValueError as e:
-        err_console.print(f"[red]{e}[/]")
-        raise typer.Exit(1)
+    else:
+        from .agents import model_from_name
+        from .summary import generate_summary
+        model = model_from_name(model_name, config) if model_name else None
+        try:
+            result = generate_summary(
+                config.storage.journal_dir,
+                config,
+                week=week,
+                write=not dry_run,
+                model=model,
+            )
+        except ValueError as e:
+            err_console.print(f"[red]{e}[/]")
+            raise typer.Exit(1)
 
     console.print(Panel(result.narrative, title="Summary", border_style="cyan"))
     console.print("\n[bold]Highlights[/]")
