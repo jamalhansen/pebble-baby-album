@@ -67,3 +67,10 @@ __pycache__/
 .envrc
 uv.toml
 .venv
+
+# Workspace standard ignores
+*.pyc
+*.pyd
+*.pyo
+.coverage
+.ruff_cache/
