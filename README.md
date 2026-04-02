@@ -33,7 +33,6 @@ A local-first CLI tool and web viewer that turns quick, messy notes into structu
 git clone https://github.com/jamalhansen/pebble-baby-album
 cd pebble-baby-album
 uv sync
-uv pip install -e .
 ```
 
 **2. Create your config**
@@ -59,7 +58,7 @@ ollama serve
 
 **5. Log your first entry**
 ```bash
-pebble log "she smiled at me for the first time today"
+uv run pebble log "she smiled at me for the first time today"
 ```
 
 Entries are saved to `~/Documents/pebble/`.
@@ -97,27 +96,27 @@ port = 5555
 ### Log a note
 
 ```bash
-pebble log "grabbed my finger at 2am, big smiles at the ceiling fan"
+uv run pebble log "grabbed my finger at 2am, big smiles at the ceiling fan"
 
 # Open $EDITOR for a longer entry
-pebble log
+uv run pebble log
 
 # Pipe from stdin
-echo "first real laugh today during tummy time" | pebble log
+echo "first real laugh today during tummy time" | uv run pebble log
 
 # Dry run — print result without saving
-pebble log "test note" --dry-run
+uv run pebble log "test note" --dry-run
 
 # Use a different model for this run
-pebble log "note" --model qwen2.5:7b
+uv run pebble log "note" --model qwen2.5:7b
 ```
 
 ### Add a photo
 
 ```bash
-pebble photo ~/Desktop/morning-smile.jpg
-pebble photo ~/Desktop/morning-smile.jpg --note "first real laugh"
-pebble photo ~/Desktop/morning-smile.jpg --model llava:13b
+uv run pebble photo ~/Desktop/morning-smile.jpg
+uv run pebble photo ~/Desktop/morning-smile.jpg --note "first real laugh"
+uv run pebble photo ~/Desktop/morning-smile.jpg --model llava:13b
 ```
 
 ### Photo inbox (batch processing)
@@ -125,10 +124,10 @@ pebble photo ~/Desktop/morning-smile.jpg --model llava:13b
 Drop photos into `~/Documents/pebble/inbox/` and run:
 
 ```bash
-pebble inbox              # describe and file all photos, then move to processed/
-pebble inbox --dry-run    # preview what would happen without making any changes
-pebble inbox --verbose    # print each photo's description as it's generated
-pebble inbox --model moondream   # use a lighter vision model
+uv run pebble inbox              # describe and file all photos, then move to processed/
+uv run pebble inbox --dry-run    # preview what would happen without making any changes
+uv run pebble inbox --verbose    # print each photo's description as it's generated
+uv run pebble inbox --model moondream   # use a lighter vision model
 ```
 
 Each photo is dated using its **EXIF DateTimeOriginal** (falling back to file modification time), so photos taken on different days automatically land in the right journal entry. Processed photos are moved to `~/Documents/pebble/inbox/processed/YYYY-MM-DD/`.
@@ -136,23 +135,23 @@ Each photo is dated using its **EXIF DateTimeOriginal** (falling back to file mo
 ### View recent entries
 
 ```bash
-pebble recent              # last 7 days
-pebble recent --weeks 4    # last 4 weeks
+uv run pebble recent              # last 7 days
+uv run pebble recent --weeks 4    # last 4 weeks
 ```
 
 ### View a single day
 
 ```bash
-pebble view                # today
-pebble view 2025-12-15     # specific date
+uv run pebble view                # today
+uv run pebble view 2025-12-15     # specific date
 ```
 
 ### Search
 
 ```bash
-pebble search "smile"
-pebble search --tag motor-skills
-pebble search --tag first --after 2025-12-01
+uv run pebble search "smile"
+uv run pebble search --tag motor-skills
+uv run pebble search --tag first --after 2025-12-01
 ```
 
 Valid tags: `motor-skills`, `social-emotional`, `cognitive`, `language`, `feeding`, `sleep`, `health`, `first`
@@ -160,17 +159,17 @@ Valid tags: `motor-skills`, `social-emotional`, `cognitive`, `language`, `feedin
 ### Generate a summary
 
 ```bash
-pebble summary --week
-pebble summary --month
-pebble summary --week --dry-run    # print without saving
-pebble summary --week --model qwen2.5:7b
+uv run pebble summary --week
+uv run pebble summary --month
+uv run pebble summary --week --dry-run    # print without saving
+uv run pebble summary --week --model qwen2.5:7b
 ```
 
 ### Web viewer
 
 ```bash
-pebble serve               # http://localhost:5555
-pebble serve --port 8080
+uv run pebble serve               # http://localhost:5555
+uv run pebble serve --port 8080
 ```
 
 ---
