@@ -14,6 +14,7 @@ from rich.markdown import Markdown
 
 from .config import load_config
 from .models import MilestoneTag, MOOD_EMOJI
+from local_first_common.providers.errors import ProviderError
 from .storage import (
     append_entry,
     iter_entries,
@@ -106,7 +107,11 @@ def log(
     else:
         from .agents import log_entry, model_from_name
         model = model_from_name(model_name, config) if model_name else None
-        entry = asyncio.run(log_entry(raw_text, entry_date, config, model=model))
+        try:
+            entry = asyncio.run(log_entry(raw_text, entry_date, config, model=model))
+        except ProviderError as e:
+            err_console.print(f"[bold red]Error:[/] {e}")
+            raise typer.Exit(1)
 
     if verbose:
         console.print(entry.model_dump_json(indent=2))
@@ -157,7 +162,11 @@ def photo(
         console.print(f"[dim]Describing photo {image_path.name}...[/]")
         from .agents import describe_photo, log_entry, model_from_name
         model = model_from_name(model_name, config) if model_name else None
-        photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
+        try:
+            photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
+        except ProviderError as e:
+            err_console.print(f"[bold red]Error describing photo:[/] {e}")
+            raise typer.Exit(1)
         console.print("[dim]Photo described.[/]")
 
     if no_llm or not note:
@@ -175,7 +184,11 @@ def photo(
         console.print("[dim]Processing text note...[/]")
         from .agents import log_entry, model_from_name
         model = model_from_name(model_name, config) if model_name else None
-        entry = asyncio.run(log_entry(note, entry_date, config, model=model))
+        try:
+            entry = asyncio.run(log_entry(note, entry_date, config, model=model))
+        except ProviderError as e:
+            err_console.print(f"[bold red]Error processing note:[/] {e}")
+            raise typer.Exit(1)
         entry.photos.append(photo_desc)
 
     if dry_run:
@@ -343,8 +356,8 @@ def summary(
                 write=not dry_run,
                 model=model,
             )
-        except ValueError as e:
-            err_console.print(f"[red]{e}[/]")
+        except (ValueError, ProviderError) as e:
+            err_console.print(f"[bold red]Error:[/] {e}")
             raise typer.Exit(1)
 
     console.print(Panel(result.narrative, title="Summary", border_style="cyan"))

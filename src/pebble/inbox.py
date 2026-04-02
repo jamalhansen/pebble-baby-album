@@ -1,6 +1,7 @@
 """Photo inbox — scan a folder, describe each photo, file it into the journal."""
 import asyncio
 import io
+import typer
 from datetime import date, datetime
 from pathlib import Path
 from typing import Iterator
@@ -12,6 +13,7 @@ from rich.console import Console
 from .agents import describe_photo
 from .config import Config
 from .models import JournalEntry, Mood
+from local_first_common.providers.errors import ProviderError
 from .storage import append_entry
 
 register_heif_opener()
@@ -120,7 +122,11 @@ def process_inbox(
             photo_date = get_photo_date(image_path)
             console.print(f"{prefix} [cyan]{photo_date}[/] — {image_path.name}")
 
-            photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
+            try:
+                photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
+            except ProviderError as e:
+                err_console.print(f"\n[bold red]Error describing photo:[/] {e}")
+                raise typer.Exit(1)
 
             if dry_run:
                 console.print(f"  [dim]Description:[/] {photo_desc.description}")
