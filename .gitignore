@@ -74,3 +74,6 @@ uv.toml
 *.pyo
 .coverage
 .ruff_cache/
+
+# Workspace standard ignores
+__pycache__
