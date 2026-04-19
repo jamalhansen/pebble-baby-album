@@ -1,4 +1,5 @@
 """Typer CLI for pebble baby journal."""
+
 import asyncio
 import sys
 from datetime import date, timedelta
@@ -31,6 +32,18 @@ console = Console()
 err_console = Console(stderr=True, style="red")
 
 
+class PebbleError(Exception):
+    """Base typed error for pebble."""
+
+
+class OllamaUnreachableError(PebbleError):
+    """Raised when Ollama cannot be reached."""
+
+
+class StorageError(PebbleError):
+    """Raised when a storage operation fails."""
+
+
 def _get_config(config_path: Optional[Path] = None):
     try:
         return load_config(config_path)
@@ -43,8 +56,11 @@ def _run_ollama_check(config):
     """Warn the user if Ollama is not reachable."""
     import urllib.request
     import urllib.error
+
     try:
         urllib.request.urlopen(config.models.ollama_host, timeout=2)
+    except OllamaUnreachableError:
+        raise
     except Exception:
         err_console.print(
             f"[bold yellow]Warning:[/] Cannot reach Ollama at {config.models.ollama_host}\n"
@@ -55,13 +71,33 @@ def _run_ollama_check(config):
 
 @app.command()
 def log(
-    note: Optional[str] = typer.Argument(None, help="Quick note (or omit to open $EDITOR)"),
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
-    date_str: Optional[str] = typer.Option(None, "--date", "-d", help="Entry date (YYYY-MM-DD)"),
-    model_name: Optional[str] = typer.Option(None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Call LLM but do not save the entry. Print to stdout."),
-    no_llm: Annotated[bool, typer.Option("--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run.")] = False,
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full structured output"),
+    note: Optional[str] = typer.Argument(
+        None, help="Quick note (or omit to open $EDITOR)"
+    ),
+    config_path: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config.toml"
+    ),
+    date_str: Optional[str] = typer.Option(
+        None, "--date", "-d", help="Entry date (YYYY-MM-DD)"
+    ),
+    model_name: Optional[str] = typer.Option(
+        None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Call LLM but do not save the entry. Print to stdout.",
+    ),
+    no_llm: Annotated[
+        bool,
+        typer.Option(
+            "--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run."
+        ),
+    ] = False,
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Show full structured output"
+    ),
 ):
     """Log a new journal entry from text."""
     config = _get_config(config_path)
@@ -81,6 +117,7 @@ def log(
         import subprocess
         import tempfile
         import os
+
         editor = os.environ.get("EDITOR", "nano")
         with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
             tmp_path = f.name
@@ -96,6 +133,7 @@ def log(
 
     if no_llm:
         from .models import JournalEntry, Mood
+
         entry = JournalEntry(
             date=entry_date,
             age_weeks=config.age_weeks(entry_date),
@@ -106,6 +144,7 @@ def log(
         )
     else:
         from .agents import log_entry, model_from_name
+
         model = model_from_name(model_name, config) if model_name else None
         try:
             entry = asyncio.run(log_entry(raw_text, entry_date, config, model=model))
@@ -117,7 +156,13 @@ def log(
         console.print(entry.model_dump_json(indent=2))
 
     if dry_run:
-        console.print(Panel(entry.narrative, title=f"[bold]{entry_date}[/] (dry run)", border_style="yellow"))
+        console.print(
+            Panel(
+                entry.narrative,
+                title=f"[bold]{entry_date}[/] (dry run)",
+                border_style="yellow",
+            )
+        )
         console.print(f"  Mood: {MOOD_EMOJI[entry.mood]} {entry.mood.value}")
         console.print(f"  Tags: {', '.join(t.value for t in entry.milestone_tags)}")
         return
@@ -131,12 +176,30 @@ def log(
 @app.command()
 def photo(
     image_path: Path = typer.Argument(..., help="Path to the photo"),
-    note: Optional[str] = typer.Option(None, "--note", help="Optional text note to merge"),
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
-    date_str: Optional[str] = typer.Option(None, "--date", "-d", help="Entry date (YYYY-MM-DD)"),
-    model_name: Optional[str] = typer.Option(None, "--model", "-m", help="Override Ollama vision model (e.g. llava:13b)"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Call LLM but do not save the entry. Print to stdout."),
-    no_llm: Annotated[bool, typer.Option("--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run.")] = False,
+    note: Optional[str] = typer.Option(
+        None, "--note", help="Optional text note to merge"
+    ),
+    config_path: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config.toml"
+    ),
+    date_str: Optional[str] = typer.Option(
+        None, "--date", "-d", help="Entry date (YYYY-MM-DD)"
+    ),
+    model_name: Optional[str] = typer.Option(
+        None, "--model", "-m", help="Override Ollama vision model (e.g. llava:13b)"
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Call LLM but do not save the entry. Print to stdout.",
+    ),
+    no_llm: Annotated[
+        bool,
+        typer.Option(
+            "--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run."
+        ),
+    ] = False,
 ):
     """Add a photo (and optional note) to today's entry."""
     config = _get_config(config_path)
@@ -161,6 +224,7 @@ def photo(
     else:
         console.print(f"[dim]Describing photo {image_path.name}...[/]")
         from .agents import describe_photo, log_entry, model_from_name
+
         model = model_from_name(model_name, config) if model_name else None
         try:
             photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
@@ -183,6 +247,7 @@ def photo(
     else:
         console.print("[dim]Processing text note...[/]")
         from .agents import log_entry, model_from_name
+
         model = model_from_name(model_name, config) if model_name else None
         try:
             entry = asyncio.run(log_entry(note, entry_date, config, model=model))
@@ -192,7 +257,13 @@ def photo(
         entry.photos.append(photo_desc)
 
     if dry_run:
-        console.print(Panel(photo_desc.description, title=f"Photo: {image_path.name} (dry run)", border_style="yellow"))
+        console.print(
+            Panel(
+                photo_desc.description,
+                title=f"Photo: {image_path.name} (dry run)",
+                border_style="yellow",
+            )
+        )
         return
 
     path = append_entry(entry, config.storage.journal_dir)
@@ -202,7 +273,9 @@ def photo(
 @app.command()
 def recent(
     weeks: int = typer.Option(1, "--weeks", "-w", help="Number of weeks to show"),
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
+    config_path: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config.toml"
+    ),
 ):
     """Show a compact timeline of recent entries."""
     config = _get_config(config_path)
@@ -239,10 +312,18 @@ def recent(
 @app.command()
 def search(
     query: Optional[str] = typer.Argument(None, help="Full-text search query"),
-    tag: Optional[str] = typer.Option(None, "--tag", "-t", help="Filter by milestone tag"),
-    after: Optional[str] = typer.Option(None, "--after", "-a", help="Only entries after date (YYYY-MM-DD)"),
-    before: Optional[str] = typer.Option(None, "--before", "-b", help="Only entries before date (YYYY-MM-DD)"),
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
+    tag: Optional[str] = typer.Option(
+        None, "--tag", "-t", help="Filter by milestone tag"
+    ),
+    after: Optional[str] = typer.Option(
+        None, "--after", "-a", help="Only entries after date (YYYY-MM-DD)"
+    ),
+    before: Optional[str] = typer.Option(
+        None, "--before", "-b", help="Only entries before date (YYYY-MM-DD)"
+    ),
+    config_path: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config.toml"
+    ),
 ):
     """Search journal entries by text and/or tag."""
     config = _get_config(config_path)
@@ -274,7 +355,9 @@ def search(
     for entry in results:
         emoji = MOOD_EMOJI[entry.mood]
         tags_str = ", ".join(t.value for t in entry.milestone_tags)
-        console.print(f"[bold cyan]{entry.date.isoformat()}[/]  {emoji}  [dim]{tags_str}[/]")
+        console.print(
+            f"[bold cyan]{entry.date.isoformat()}[/]  {emoji}  [dim]{tags_str}[/]"
+        )
         console.print(f"  {entry.narrative.split(chr(10))[0][:80]}")
         console.print()
 
@@ -283,8 +366,12 @@ def search(
 
 @app.command()
 def view(
-    entry_date_str: Optional[str] = typer.Argument(None, help="Date to view (YYYY-MM-DD), defaults to today"),
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
+    entry_date_str: Optional[str] = typer.Argument(
+        None, help="Date to view (YYYY-MM-DD), defaults to today"
+    ),
+    config_path: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config.toml"
+    ),
 ):
     """Pretty-print a single day's journal entry."""
     config = _get_config(config_path)
@@ -306,21 +393,37 @@ def view(
 
     for photo in entry.photos:
         console.print()
-        console.print(Panel(
-            photo.description,
-            title=f"[dim]📷 {photo.file_path}[/]",
-            border_style="dim",
-        ))
+        console.print(
+            Panel(
+                photo.description,
+                title=f"[dim]📷 {photo.file_path}[/]",
+                border_style="dim",
+            )
+        )
 
 
 @app.command()
 def summary(
     week: bool = typer.Option(False, "--week", "-w", help="Summarize current week"),
     month: bool = typer.Option(False, "--month", help="Summarize current month"),
-    model_name: Optional[str] = typer.Option(None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Call LLM but do not save summary to disk. Print to stdout."),
-    no_llm: Annotated[bool, typer.Option("--no-llm", help="Skip LLM call, use mock summary. Implies --dry-run.")] = False,
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
+    model_name: Optional[str] = typer.Option(
+        None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Call LLM but do not save summary to disk. Print to stdout.",
+    ),
+    no_llm: Annotated[
+        bool,
+        typer.Option(
+            "--no-llm", help="Skip LLM call, use mock summary. Implies --dry-run."
+        ),
+    ] = False,
+    config_path: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config.toml"
+    ),
 ):
     """Generate a weekly or monthly summary."""
     if not week and not month:
@@ -336,6 +439,7 @@ def summary(
     if no_llm:
         from datetime import date as _date
         from .models import WeeklySummary
+
         today = _date.today()
         result = WeeklySummary(
             week_start=today,
@@ -347,6 +451,7 @@ def summary(
     else:
         from .agents import model_from_name
         from .summary import generate_summary
+
         model = model_from_name(model_name, config) if model_name else None
         try:
             result = generate_summary(
@@ -371,10 +476,21 @@ def summary(
 
 @app.command()
 def inbox(
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
-    model_name: Optional[str] = typer.Option(None, "--model", "-m", help="Override Ollama vision model (e.g. moondream)"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be processed without making changes"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Print photo descriptions as they're generated"),
+    config_path: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config.toml"
+    ),
+    model_name: Optional[str] = typer.Option(
+        None, "--model", "-m", help="Override Ollama vision model (e.g. moondream)"
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Show what would be processed without making changes",
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Print photo descriptions as they're generated"
+    ),
 ):
     """Process all photos in the inbox folder and file them into the journal."""
     config = _get_config(config_path)
@@ -391,26 +507,36 @@ def inbox(
 
     from .agents import model_from_name
     from .inbox import process_inbox
+
     model = model_from_name(model_name, config) if model_name else None
-    processed, skipped = process_inbox(config, dry_run=dry_run, verbose=verbose, model=model)
+    processed, skipped = process_inbox(
+        config, dry_run=dry_run, verbose=verbose, model=model
+    )
 
     suffix = " (dry run)" if dry_run else ""
-    console.print(f"\n[bold]Done{suffix}.[/] Processed: {processed}, Skipped: {skipped}")
+    console.print(
+        f"\n[bold]Done{suffix}.[/] Processed: {processed}, Skipped: {skipped}"
+    )
 
 
 @app.command()
 def serve(
     port: int = typer.Option(5555, "--port", "-p", help="Port to listen on"),
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Path to config.toml"),
+    config_path: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Path to config.toml"
+    ),
 ):
     """Start the local web viewer."""
     config = _get_config(config_path)
     actual_port = port or config.web.port
 
-    console.print(f"[bold green]pebble web viewer[/] starting at [cyan]http://localhost:{actual_port}[/]")
+    console.print(
+        f"[bold green]pebble web viewer[/] starting at [cyan]http://localhost:{actual_port}[/]"
+    )
     console.print("[dim]Press Ctrl+C to stop.[/]")
 
     from pebble.web.app import create_app
+
     flask_app = create_app(config)
     flask_app.run(host="127.0.0.1", port=actual_port, debug=False)
 
