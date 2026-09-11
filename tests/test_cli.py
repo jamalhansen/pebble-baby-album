@@ -1,13 +1,14 @@
 """Tests for cli.py — command line interface for pebble."""
 
 from datetime import date
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import typer
+
 from pebble import cli
+from pebble.cli import OllamaUnreachableError, PebbleError, StorageError
 from pebble.models import Mood
-from pebble.cli import PebbleError, OllamaUnreachableError, StorageError
 
 
 class TestTypedErrors:
@@ -35,9 +36,11 @@ def test_get_config_success():
 
 def test_get_config_error():
     """Exits on config error."""
-    with patch("pebble.cli.load_config", side_effect=FileNotFoundError("missing")):
-        with pytest.raises(typer.Exit):
-            cli._get_config()
+    with (
+        patch("pebble.cli.load_config", side_effect=FileNotFoundError("missing")),
+        pytest.raises(typer.Exit),
+    ):
+        cli._get_config()
 
 
 def test_run_ollama_check_success():
@@ -52,9 +55,11 @@ def test_run_ollama_check_failure():
     """Exits if Ollama unreachable."""
     mock_config = MagicMock()
     mock_config.models.ollama_host = "http://localhost:11434"
-    with patch("urllib.request.urlopen", side_effect=Exception("unreachable")):
-        with pytest.raises(typer.Exit):
-            cli._run_ollama_check(mock_config)
+    with (
+        patch("urllib.request.urlopen", side_effect=Exception("unreachable")),
+        pytest.raises(typer.Exit),
+    ):
+        cli._run_ollama_check(mock_config)
 
 
 @patch("pebble.cli._get_config")
@@ -88,7 +93,7 @@ def test_recent_command(mock_print, mock_iter, mock_config, tmp_path):
     mock_config.return_value = cfg
 
     mock_entry = MagicMock()
-    mock_entry.date = date.today()
+    mock_entry.date = date(2026, 6, 1)
     mock_entry.mood = Mood.TENDER
     mock_entry.milestone_tags = []
     mock_entry.narrative = "narrative text"

@@ -1,11 +1,12 @@
 """Photo inbox — scan a folder, describe each photo, file it into the journal."""
 import asyncio
 import io
-import typer
+from collections.abc import Iterator
 from datetime import date, datetime
 from pathlib import Path
-from typing import Iterator
 
+import typer
+from local_first_common.providers.errors import ProviderError
 from PIL import Image
 from pillow_heif import register_heif_opener
 from rich.console import Console
@@ -13,7 +14,6 @@ from rich.console import Console
 from .agents import describe_photo
 from .config import Config
 from .models import JournalEntry, Mood
-from local_first_common.providers.errors import ProviderError
 from .storage import append_entry
 
 register_heif_opener()
@@ -39,12 +39,13 @@ def get_photo_date(image_path: Path) -> date:
             if exif:
                 raw = exif.get(36867)  # DateTimeOriginal
                 if raw:
-                    return datetime.strptime(raw, "%Y:%m:%d %H:%M:%S").date()
-    except Exception:
-        pass
+                    return datetime.strptime(raw, "%Y:%m:%d %H:%M:%S").date()  # noqa: DTZ007 - EXIF DateTimeOriginal carries no timezone in this tag; only the date component is used
+    except Exception as e:  # noqa: BLE001 - EXIF reading can fail in many ways (corrupt file, unsupported format); fall back to file mtime
+        print(f"  [warn] Could not read EXIF date from {image_path.name}: {e}")
 
-    # Fall back to file modification time
-    return datetime.fromtimestamp(image_path.stat().st_mtime).date()
+    # Fall back to file modification time, in local time -- "what day was this
+    # photo taken" is a local-calendar-day question, not a UTC one.
+    return datetime.fromtimestamp(image_path.stat().st_mtime).astimezone().date()
 
 
 def iter_inbox(inbox_dir: Path) -> Iterator[Path]:
@@ -156,7 +157,7 @@ def process_inbox(
 
             processed += 1
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - one bad photo shouldn't stop processing the rest of the inbox
             err_console.print(f"  [red]✗ Skipped {image_path.name}:[/] {exc}")
             skipped += 1
 

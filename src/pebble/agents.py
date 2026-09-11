@@ -5,12 +5,12 @@ import time
 from datetime import date
 from pathlib import Path
 
+from local_first_common.providers.ollama import OllamaProvider
+from local_first_common.tracking import register_tool, timed_run
 from PIL import Image
 from pillow_heif import register_heif_opener
 from rich.console import Console
 
-from local_first_common.providers.ollama import OllamaProvider
-from local_first_common.tracking import register_tool, timed_run
 from .config import Config
 from .models import (
     EntryMetadata,

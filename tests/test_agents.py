@@ -4,9 +4,10 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from pebble.models import EntryMetadata, JournalEntry, MilestoneTag, Mood, WeeklySummary
-from pebble.config import Config, BabyConfig, ModelsConfig, StorageConfig, WebConfig
 from local_first_common.testing import MockProvider
+
+from pebble.config import BabyConfig, Config, ModelsConfig, StorageConfig, WebConfig
+from pebble.models import EntryMetadata, JournalEntry, MilestoneTag, Mood, WeeklySummary
 
 BIRTH_DATE = date(2024, 1, 1)
 
@@ -92,7 +93,7 @@ class TestLogEntry:
             from pebble import agents
             asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
-        system, user = mock_llm.calls[0]
+        _system, user = mock_llm.calls[0]
         assert "Test Baby" in user
         assert "2025-12-15" in user
 

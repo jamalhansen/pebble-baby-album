@@ -1,6 +1,7 @@
-from pydantic import BaseModel
 from datetime import date
 from enum import Enum
+
+from pydantic import BaseModel
 
 
 class MilestoneTag(str, Enum):

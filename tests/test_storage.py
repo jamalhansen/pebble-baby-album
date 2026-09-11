@@ -2,16 +2,15 @@
 from datetime import date
 from pathlib import Path
 
-from pebble.models import JournalEntry, MilestoneTag, Mood
+from pebble.models import JournalEntry, MilestoneTag, Mood, WeeklySummary
 from pebble.storage import (
     append_entry,
     iter_entries,
     load_entry,
     save_entry,
-    search_entries,
     save_summary,
+    search_entries,
 )
-from pebble.models import WeeklySummary
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

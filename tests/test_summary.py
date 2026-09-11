@@ -1,9 +1,10 @@
 """Tests for summary.py — date bounds and summary generation orchestration."""
 
 from datetime import date
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
 from pebble import summary
 
 

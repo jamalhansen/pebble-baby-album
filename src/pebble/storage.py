@@ -1,7 +1,7 @@
 """Read and write journal entries as markdown files with YAML frontmatter."""
+from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
-from typing import Iterator
 
 import frontmatter
 
@@ -59,7 +59,7 @@ def _parse_entry(path: Path) -> JournalEntry | None:
     """Parse a single markdown file into a JournalEntry. Returns None on error."""
     try:
         post = frontmatter.load(str(path))
-    except Exception:
+    except Exception:  # noqa: BLE001 - a hand-edited journal entry can fail to parse in many ways; per this function's own contract, return None rather than crash
         return None
 
     meta = post.metadata

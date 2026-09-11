@@ -1,11 +1,11 @@
 """Flask web viewer for pebble journal. Read-only. No network requests."""
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
-from flask import Flask, render_template, request, abort, send_from_directory
+from flask import Flask, abort, render_template, request, send_from_directory
 
 from pebble.config import Config
-from pebble.models import MilestoneTag, MOOD_EMOJI
+from pebble.models import MOOD_EMOJI, MilestoneTag
 from pebble.storage import iter_entries, load_entry, search_entries
 
 PAGE_SIZE = 10
@@ -36,7 +36,7 @@ def create_app(config: Config) -> Flask:
         return {
             "baby_name": config.baby.name,
             "mood_emoji": MOOD_EMOJI,
-            "today": date.today().isoformat(),
+            "today": datetime.now().astimezone().date().isoformat(),
         }
 
     @app.route("/")

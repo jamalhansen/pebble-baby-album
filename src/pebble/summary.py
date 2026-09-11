@@ -1,6 +1,6 @@
 """Weekly and monthly summary generation."""
 import asyncio
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from .agents import summarize_entries
@@ -35,7 +35,7 @@ def generate_summary(
     model=None,
 ) -> WeeklySummary:
     """Generate a weekly or monthly summary. Runs the async agent synchronously."""
-    today = ref_date or date.today()
+    today = ref_date or datetime.now().astimezone().date()
     if week:
         start, end = _week_bounds(today)
     else:

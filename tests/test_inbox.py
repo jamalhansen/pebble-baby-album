@@ -3,9 +3,9 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pebble.config import Config, BabyConfig, ModelsConfig, StorageConfig, WebConfig
+from pebble.config import BabyConfig, Config, ModelsConfig, StorageConfig, WebConfig
+from pebble.inbox import _dest_path, get_photo_date, iter_inbox, process_inbox
 from pebble.models import PhotoDescription
-from pebble.inbox import get_photo_date, iter_inbox, process_inbox, _dest_path
 
 BIRTH_DATE = date(2024, 1, 1)
 

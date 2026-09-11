@@ -2,20 +2,20 @@
 
 import asyncio
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
-from rich.console import Console
-from rich.table import Table
+from local_first_common.providers.errors import ProviderError
 from rich import box
-from rich.panel import Panel
+from rich.console import Console
 from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.table import Table
 
 from .config import load_config
-from .models import MilestoneTag, MOOD_EMOJI
-from local_first_common.providers.errors import ProviderError
+from .models import MOOD_EMOJI, MilestoneTag
 from .storage import (
     append_entry,
     iter_entries,
@@ -44,7 +44,7 @@ class StorageError(PebbleError):
     """Raised when a storage operation fails."""
 
 
-def _get_config(config_path: Optional[Path] = None):
+def _get_config(config_path: Path | None = None):
     try:
         return load_config(config_path)
     except FileNotFoundError as e:
@@ -54,14 +54,14 @@ def _get_config(config_path: Optional[Path] = None):
 
 def _run_ollama_check(config):
     """Warn the user if Ollama is not reachable."""
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     try:
         urllib.request.urlopen(config.models.ollama_host, timeout=2)
     except OllamaUnreachableError:
         raise
-    except Exception:
+    except Exception:  # noqa: BLE001 - any failure to reach the host (timeout, DNS, connection refused) means the same thing here: Ollama isn't reachable
         err_console.print(
             f"[bold yellow]Warning:[/] Cannot reach Ollama at {config.models.ollama_host}\n"
             "Make sure Ollama is running: [bold]ollama serve[/]"
@@ -71,16 +71,16 @@ def _run_ollama_check(config):
 
 @app.command()
 def log(
-    note: Optional[str] = typer.Argument(
+    note: str | None = typer.Argument(
         None, help="Quick note (or omit to open $EDITOR)"
     ),
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to config.toml"
-    ),
-    date_str: Optional[str] = typer.Option(
+    config_path: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
+    ] = None,
+    date_str: str | None = typer.Option(
         None, "--date", "-d", help="Entry date (YYYY-MM-DD)"
     ),
-    model_name: Optional[str] = typer.Option(
+    model_name: str | None = typer.Option(
         None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"
     ),
     dry_run: bool = typer.Option(
@@ -106,7 +106,7 @@ def log(
     else:
         _run_ollama_check(config)
 
-    entry_date = date.fromisoformat(date_str) if date_str else date.today()
+    entry_date = date.fromisoformat(date_str) if date_str else datetime.now().astimezone().date()
 
     # Get text from argument, stdin, or editor
     if note:
@@ -114,9 +114,9 @@ def log(
     elif not sys.stdin.isatty():
         raw_text = sys.stdin.read().strip()
     else:
+        import os
         import subprocess
         import tempfile
-        import os
 
         editor = os.environ.get("EDITOR", "nano")
         with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
@@ -175,17 +175,17 @@ def log(
 
 @app.command()
 def photo(
-    image_path: Path = typer.Argument(..., help="Path to the photo"),
-    note: Optional[str] = typer.Option(
+    image_path: Annotated[Path, typer.Argument(help="Path to the photo")],
+    note: str | None = typer.Option(
         None, "--note", help="Optional text note to merge"
     ),
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to config.toml"
-    ),
-    date_str: Optional[str] = typer.Option(
+    config_path: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
+    ] = None,
+    date_str: str | None = typer.Option(
         None, "--date", "-d", help="Entry date (YYYY-MM-DD)"
     ),
-    model_name: Optional[str] = typer.Option(
+    model_name: str | None = typer.Option(
         None, "--model", "-m", help="Override Ollama vision model (e.g. llava:13b)"
     ),
     dry_run: bool = typer.Option(
@@ -212,7 +212,7 @@ def photo(
         err_console.print(f"[red]Image not found:[/] {image_path}")
         raise typer.Exit(1)
 
-    entry_date = date.fromisoformat(date_str) if date_str else date.today()
+    entry_date = date.fromisoformat(date_str) if date_str else datetime.now().astimezone().date()
 
     from .models import JournalEntry, Mood, PhotoDescription
 
@@ -273,13 +273,13 @@ def photo(
 @app.command()
 def recent(
     weeks: int = typer.Option(1, "--weeks", "-w", help="Number of weeks to show"),
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to config.toml"
-    ),
+    config_path: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
+    ] = None,
 ):
     """Show a compact timeline of recent entries."""
     config = _get_config(config_path)
-    cutoff = date.today() - timedelta(weeks=weeks)
+    cutoff = datetime.now().astimezone().date() - timedelta(weeks=weeks)
 
     entries = [e for e in iter_entries(config.storage.journal_dir) if e.date >= cutoff]
 
@@ -311,19 +311,19 @@ def recent(
 
 @app.command()
 def search(
-    query: Optional[str] = typer.Argument(None, help="Full-text search query"),
-    tag: Optional[str] = typer.Option(
+    query: str | None = typer.Argument(None, help="Full-text search query"),
+    tag: str | None = typer.Option(
         None, "--tag", "-t", help="Filter by milestone tag"
     ),
-    after: Optional[str] = typer.Option(
+    after: str | None = typer.Option(
         None, "--after", "-a", help="Only entries after date (YYYY-MM-DD)"
     ),
-    before: Optional[str] = typer.Option(
+    before: str | None = typer.Option(
         None, "--before", "-b", help="Only entries before date (YYYY-MM-DD)"
     ),
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to config.toml"
-    ),
+    config_path: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
+    ] = None,
 ):
     """Search journal entries by text and/or tag."""
     config = _get_config(config_path)
@@ -366,16 +366,16 @@ def search(
 
 @app.command()
 def view(
-    entry_date_str: Optional[str] = typer.Argument(
+    entry_date_str: str | None = typer.Argument(
         None, help="Date to view (YYYY-MM-DD), defaults to today"
     ),
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to config.toml"
-    ),
+    config_path: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
+    ] = None,
 ):
     """Pretty-print a single day's journal entry."""
     config = _get_config(config_path)
-    entry_date = date.fromisoformat(entry_date_str) if entry_date_str else date.today()
+    entry_date = date.fromisoformat(entry_date_str) if entry_date_str else datetime.now().astimezone().date()
     entry = load_entry(entry_date, config.storage.journal_dir)
 
     if entry is None:
@@ -406,7 +406,7 @@ def view(
 def summary(
     week: bool = typer.Option(False, "--week", "-w", help="Summarize current week"),
     month: bool = typer.Option(False, "--month", help="Summarize current month"),
-    model_name: Optional[str] = typer.Option(
+    model_name: str | None = typer.Option(
         None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"
     ),
     dry_run: bool = typer.Option(
@@ -421,9 +421,9 @@ def summary(
             "--no-llm", help="Skip LLM call, use mock summary. Implies --dry-run."
         ),
     ] = False,
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to config.toml"
-    ),
+    config_path: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
+    ] = None,
 ):
     """Generate a weekly or monthly summary."""
     if not week and not month:
@@ -437,10 +437,9 @@ def summary(
         _run_ollama_check(config)
 
     if no_llm:
-        from datetime import date as _date
         from .models import WeeklySummary
 
-        today = _date.today()
+        today = datetime.now().astimezone().date()
         result = WeeklySummary(
             week_start=today,
             week_end=today,
@@ -476,10 +475,10 @@ def summary(
 
 @app.command()
 def inbox(
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to config.toml"
-    ),
-    model_name: Optional[str] = typer.Option(
+    config_path: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
+    ] = None,
+    model_name: str | None = typer.Option(
         None, "--model", "-m", help="Override Ollama vision model (e.g. moondream)"
     ),
     dry_run: bool = typer.Option(
@@ -522,9 +521,9 @@ def inbox(
 @app.command()
 def serve(
     port: int = typer.Option(5555, "--port", "-p", help="Port to listen on"),
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to config.toml"
-    ),
+    config_path: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
+    ] = None,
 ):
     """Start the local web viewer."""
     config = _get_config(config_path)

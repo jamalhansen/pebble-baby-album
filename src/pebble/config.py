@@ -1,13 +1,7 @@
+import tomllib
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-import sys
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
-
 
 XDG_CONFIG_HOME = Path.home() / ".config"
 DOCUMENTS_CONFIG_PATH = Path.home() / "Documents" / "pebble" / "config.toml"

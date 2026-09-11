@@ -12,6 +12,7 @@ Usage:
 import io
 import sys
 from pathlib import Path
+from typing import Annotated
 
 # Allow running from repo root without install
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -63,7 +64,9 @@ def _update_journal(journal_dir: Path, old_path: Path, new_path: Path, dry_run: 
 @app.command()
 def main(
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would change, don't write anything."),
-    config_path: typer.FileText = typer.Option(None, "--config", "-C", help="Path to config.toml (overrides auto-detection)."),
+    config_path: Annotated[
+        typer.FileText, typer.Option("--config", "-C", help="Path to config.toml (overrides auto-detection).")
+    ] = None,
 ) -> None:
     config = load_config(Path(config_path.name) if config_path else None)
     processed_dir = config.storage.processed_dir
@@ -107,7 +110,7 @@ def main(
             _update_journal(journal_dir, src, dest, dry_run)
             converted += 1
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - one file failing to convert shouldn't stop the batch migration
             err.print(f"  [red]✗ Failed:[/] {exc}")
             skipped += 1
 
