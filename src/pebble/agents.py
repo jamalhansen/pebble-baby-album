@@ -5,7 +5,8 @@ import time
 from datetime import date
 from pathlib import Path
 
-from local_first_common.providers.ollama import OllamaProvider
+from local_first_common.cli import resolve_provider
+from local_first_common.providers import PROVIDERS
 from local_first_common.tracking import register_tool, timed_run
 from PIL import Image
 from pillow_heif import register_heif_opener
@@ -66,8 +67,15 @@ _SUMMARY_SYSTEM = (
 )
 
 
-def _get_provider(config: Config, model_name: str) -> OllamaProvider:
-    return OllamaProvider(model=model_name)
+def _get_provider(config: Config, model_name: str):
+    # use_gateway=False, fallback=False: baby photos and journal text stay
+    # local, full stop. Routing through the gateway wouldn't guarantee that
+    # -- the gateway's own internal resolve_provider() call always defaults
+    # to fallback=True with no way for a caller to override it, so an
+    # unreachable Ollama would silently escalate to whatever cloud provider
+    # resolve_fallback_target() picks. Direct instantiation with fallback=False
+    # never wraps in FallbackProvider at all, so there's no cloud leg to escalate to.
+    return resolve_provider(PROVIDERS, "ollama", model_name, tool_name="pebble", fallback=False, use_gateway=False)
 
 
 async def log_entry(
