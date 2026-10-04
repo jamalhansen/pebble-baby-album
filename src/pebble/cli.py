@@ -49,7 +49,7 @@ def _get_config(config_path: Path | None = None):
         return load_config(config_path)
     except FileNotFoundError as e:
         err_console.print(f"[bold red]Error:[/] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 def _run_ollama_check(config):
@@ -66,7 +66,7 @@ def _run_ollama_check(config):
             f"[bold yellow]Warning:[/] Cannot reach Ollama at {config.models.ollama_host}\n"
             "Make sure Ollama is running: [bold]ollama serve[/]"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command()
@@ -150,7 +150,7 @@ def log(
             entry = asyncio.run(log_entry(raw_text, entry_date, config, model=model))
         except ProviderError as e:
             err_console.print(f"[bold red]Error:[/] {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
     if verbose:
         console.print(entry.model_dump_json(indent=2))
@@ -230,7 +230,7 @@ def photo(
             photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
         except ProviderError as e:
             err_console.print(f"[bold red]Error describing photo:[/] {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
         console.print("[dim]Photo described.[/]")
 
     if no_llm or not note:
@@ -253,7 +253,7 @@ def photo(
             entry = asyncio.run(log_entry(note, entry_date, config, model=model))
         except ProviderError as e:
             err_console.print(f"[bold red]Error processing note:[/] {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
         entry.photos.append(photo_desc)
 
     if dry_run:
@@ -335,7 +335,7 @@ def search(
         except ValueError:
             valid = ", ".join(t.value for t in MilestoneTag)
             err_console.print(f"[red]Unknown tag:[/] {tag}\nValid tags: {valid}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
     after_date = date.fromisoformat(after) if after else None
     before_date = date.fromisoformat(before) if before else None
@@ -462,7 +462,7 @@ def summary(
             )
         except (ValueError, ProviderError) as e:
             err_console.print(f"[bold red]Error:[/] {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
     console.print(Panel(result.narrative, title="Summary", border_style="cyan"))
     console.print("\n[bold]Highlights[/]")

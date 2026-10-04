@@ -127,7 +127,7 @@ def process_inbox(
                 photo_desc = asyncio.run(describe_photo(image_path, config, model=model))
             except ProviderError as e:
                 err_console.print(f"\n[bold red]Error describing photo:[/] {e}")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
 
             if dry_run:
                 console.print(f"  [dim]Description:[/] {photo_desc.description}")
