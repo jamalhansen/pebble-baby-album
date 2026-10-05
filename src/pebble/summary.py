@@ -1,4 +1,5 @@
 """Weekly and monthly summary generation."""
+
 import asyncio
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -41,17 +42,12 @@ def generate_summary(
     else:
         start, end = _month_bounds(today)
 
-    entries = [
-        e for e in iter_entries(journal_dir)
-        if start <= e.date <= end
-    ]
+    entries = [e for e in iter_entries(journal_dir) if start <= e.date <= end]
 
     if not entries:
         raise ValueError(f"No entries found between {start.isoformat()} and {end.isoformat()}")
 
-    summary = asyncio.run(
-        summarize_entries(entries, start, end, config, model=model)
-    )
+    summary = asyncio.run(summarize_entries(entries, start, end, config, model=model))
 
     if write:
         save_summary(summary, journal_dir)

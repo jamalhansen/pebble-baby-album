@@ -1,4 +1,5 @@
 """Tests for storage.py — reading, writing, searching journal entries."""
+
 from datetime import date
 from pathlib import Path
 

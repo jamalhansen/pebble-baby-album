@@ -1,4 +1,5 @@
 """Tests for inbox.py — photo inbox scanning and batch processing."""
+
 from datetime import date
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -176,11 +177,12 @@ class TestProcessInbox:
 
         fixed_desc = self._make_photo_desc(photo)
 
-        with patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)), \
-             patch("pebble.inbox.append_entry") as mock_append, \
-             patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)), \
-             patch("pebble.inbox._save_as_jpeg") as mock_save:
-
+        with (
+            patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)),
+            patch("pebble.inbox.append_entry") as mock_append,
+            patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)),
+            patch("pebble.inbox._save_as_jpeg") as mock_save,
+        ):
             processed, skipped = process_inbox(config)
 
         assert processed == 1
@@ -196,10 +198,11 @@ class TestProcessInbox:
 
         fixed_desc = self._make_photo_desc(photo)
 
-        with patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)), \
-             patch("pebble.inbox.append_entry") as mock_append, \
-             patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)):
-
+        with (
+            patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)),
+            patch("pebble.inbox.append_entry") as mock_append,
+            patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)),
+        ):
             processed, skipped = process_inbox(config, dry_run=True)
 
         assert processed == 1
@@ -221,11 +224,12 @@ class TestProcessInbox:
                 raise RuntimeError("Ollama error")
             return PhotoDescription(file_path=str(path), description="Nice photo.")
 
-        with patch("pebble.inbox.describe_photo", new=flaky_describe), \
-             patch("pebble.inbox.append_entry"), \
-             patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)), \
-             patch("pebble.inbox._save_as_jpeg"):
-
+        with (
+            patch("pebble.inbox.describe_photo", new=flaky_describe),
+            patch("pebble.inbox.append_entry"),
+            patch("pebble.inbox.get_photo_date", return_value=date(2025, 12, 15)),
+            patch("pebble.inbox._save_as_jpeg"),
+        ):
             processed, skipped = process_inbox(config)
 
         assert processed == 1
@@ -252,11 +256,12 @@ class TestProcessInbox:
             captured_entries.append(entry)
             return journal_dir / f"{entry.date}.md"
 
-        with patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)), \
-             patch("pebble.inbox.append_entry", side_effect=capture_append), \
-             patch("pebble.inbox.get_photo_date", return_value=exif_date), \
-             patch("pebble.inbox._save_as_jpeg"):
-
+        with (
+            patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)),
+            patch("pebble.inbox.append_entry", side_effect=capture_append),
+            patch("pebble.inbox.get_photo_date", return_value=exif_date),
+            patch("pebble.inbox._save_as_jpeg"),
+        ):
             process_inbox(config)
 
         assert len(captured_entries) == 1
@@ -271,11 +276,12 @@ class TestProcessInbox:
 
         fixed_desc = self._make_photo_desc(photo)
 
-        with patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)), \
-             patch("pebble.inbox.append_entry"), \
-             patch("pebble.inbox.get_photo_date", return_value=photo_date), \
-             patch("pebble.inbox._save_as_jpeg") as mock_save:
-
+        with (
+            patch("pebble.inbox.describe_photo", new=AsyncMock(return_value=fixed_desc)),
+            patch("pebble.inbox.append_entry"),
+            patch("pebble.inbox.get_photo_date", return_value=photo_date),
+            patch("pebble.inbox._save_as_jpeg") as mock_save,
+        ):
             process_inbox(config)
 
         dest_arg = mock_save.call_args[0][1]

@@ -9,6 +9,7 @@ Usage:
     uv run scripts/migrate_heic_to_jpg.py
     uv run scripts/migrate_heic_to_jpg.py --dry-run
 """
+
 import io
 import sys
 from pathlib import Path
@@ -74,10 +75,7 @@ def main(
 
     console.print(f"Scanning [cyan]{processed_dir}[/] for HEIC files…")
 
-    heic_files = [
-        p for p in processed_dir.rglob("*")
-        if p.is_file() and p.suffix.lower() in _HEIC_SUFFIXES
-    ]
+    heic_files = [p for p in processed_dir.rglob("*") if p.is_file() and p.suffix.lower() in _HEIC_SUFFIXES]
 
     if not heic_files:
         console.print("[green]No HEIC files found — nothing to do.[/]")

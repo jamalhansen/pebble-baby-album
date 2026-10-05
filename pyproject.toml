@@ -35,3 +35,6 @@ packages = ["src/pebble"]
 
 [tool.uv.sources]
 local-first-common = { git = "https://github.com/jamalhansen/local-first-common.git", branch = "main" }
+
+[tool.ruff]
+line-length = 120

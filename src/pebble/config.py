@@ -18,6 +18,7 @@ def _find_config() -> Path:
     4. ./config.toml                   (repo root, for development)
     """
     import os
+
     env = os.environ.get("PEBBLE_CONFIG")
     if env:
         return Path(env)
@@ -77,7 +78,7 @@ def load_config(path: Path | None = None) -> Config:
             f"Or set $PEBBLE_CONFIG to any path.\n\n"
             f"Minimal config:\n"
             f"  [baby]\n"
-            f"  name = \"Baby\"\n"
+            f'  name = "Baby"\n'
             f"  birth_date = 2025-01-01\n"
         )
     with open(config_path, "rb") as f:

@@ -47,6 +47,7 @@ pydantic-ai v1.x has no `OllamaModel`. Ollama is accessed via its OpenAI-compati
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
+
 def _make_ollama_model(model_name: str, ollama_host: str) -> OpenAIModel:
     provider = OpenAIProvider(base_url=f"{ollama_host}/v1", api_key="ollama")
     return OpenAIModel(model_name=model_name, provider=provider)

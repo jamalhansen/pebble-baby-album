@@ -21,7 +21,7 @@ def test_month_bounds():
     first, last = summary._month_bounds(date(2026, 3, 20))
     assert first == date(2026, 3, 1)
     assert last == date(2026, 3, 31)
-    
+
     # Check December rollover
     first, last = summary._month_bounds(date(2026, 12, 10))
     assert first == date(2026, 12, 1)
@@ -45,12 +45,12 @@ def test_generate_summary_success(mock_save, mock_run, mock_iter, tmp_path):
     mock_entry = MagicMock()
     mock_entry.date = date(2026, 3, 20)
     mock_iter.return_value = [mock_entry]
-    
+
     mock_summary = MagicMock()
     mock_run.return_value = mock_summary
-    
+
     res = summary.generate_summary(tmp_path, MagicMock(), ref_date=date(2026, 3, 20))
-    
+
     assert res == mock_summary
     mock_save.assert_called_once_with(mock_summary, tmp_path)
     mock_run.assert_called_once()

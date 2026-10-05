@@ -1,4 +1,5 @@
 """Agents for journal structuring and photo description, using standardized providers."""
+
 import base64
 import io
 import time
@@ -87,12 +88,8 @@ async def log_entry(
     """Classify the parent's note (tags + mood) and build a JournalEntry."""
     model_name = model or config.models.text_model
     age_weeks = config.age_weeks(entry_date)
-    prompt = (
-        f"Baby's name: {config.baby.name}\n"
-        f"Today's date: {entry_date.isoformat()}\n\n"
-        f"Parent's note:\n{raw_text}"
-    )
-    
+    prompt = f"Baby's name: {config.baby.name}\nToday's date: {entry_date.isoformat()}\n\nParent's note:\n{raw_text}"
+
     llm = _get_provider(config, model_name)
     with timed_run("pebble", llm.model, source_location=entry_date.isoformat()) as run:
         meta_dict = await llm.acomplete(
@@ -105,7 +102,7 @@ async def log_entry(
         run.output_tokens = getattr(llm, "output_tokens", None) or None
 
     meta = EntryMetadata.model_validate(meta_dict)
-    
+
     return JournalEntry(
         date=entry_date,
         age_weeks=age_weeks,
@@ -153,7 +150,7 @@ async def describe_photo(
 
     _console.print(f"  [dim]calling {model_name} …[/]")
     t1 = time.monotonic()
-    
+
     llm = _get_provider(config, model_name)
     with timed_run("pebble", llm.model, source_location=str(image_path)) as run:
         photo_dict = await llm.acomplete(
@@ -167,7 +164,7 @@ async def describe_photo(
         run.output_tokens = getattr(llm, "output_tokens", None) or None
 
     analysis = PhotoAnalysis.model_validate(photo_dict)
-    
+
     t_llm = time.monotonic() - t1
     _console.print(f"  [dim]llm: {t_llm:.1f}s[/]")
 
@@ -187,15 +184,14 @@ async def summarize_entries(
     """Call the summary model over a list of entries."""
     model_name = model or config.models.text_model
     entry_texts = [
-        f"--- {e.date.isoformat()} (week {e.age_weeks}, mood: {e.mood.value}) ---\n{e.narrative}"
-        for e in entries
+        f"--- {e.date.isoformat()} (week {e.age_weeks}, mood: {e.mood.value}) ---\n{e.narrative}" for e in entries
     ]
     prompt = (
         f"Baby's name: {config.baby.name}\n"
         f"Week: {week_start.isoformat()} to {week_end.isoformat()}\n\n"
         f"Journal entries:\n\n" + "\n\n".join(entry_texts)
     )
-    
+
     llm = _get_provider(config, model_name)
     with timed_run("pebble", llm.model, source_location=week_start.isoformat()) as run:
         summary_dict = await llm.acomplete(
@@ -208,7 +204,7 @@ async def summarize_entries(
         run.output_tokens = getattr(llm, "output_tokens", None) or None
 
     summary = WeeklySummary.model_validate(summary_dict)
-    
+
     summary.week_start = week_start
     summary.week_end = week_end
     return summary

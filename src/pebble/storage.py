@@ -1,4 +1,5 @@
 """Read and write journal entries as markdown files with YAML frontmatter."""
+
 from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
@@ -46,6 +47,7 @@ def _parse_photos(content: str) -> tuple[str, list[PhotoDescription]]:
 
     # Each photo starts with "### <path>"
     import re
+
     photo_sections = re.split(r"^### (.+)$", photo_block, flags=re.MULTILINE)
     # photo_sections: ["", path1, desc1, path2, desc2, ...]
     it = iter(photo_sections[1:])

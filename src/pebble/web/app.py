@@ -1,4 +1,5 @@
 """Flask web viewer for pebble journal. Read-only. No network requests."""
+
 from datetime import date, datetime
 from pathlib import Path
 

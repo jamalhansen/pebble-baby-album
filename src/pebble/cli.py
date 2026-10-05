@@ -71,18 +71,10 @@ def _run_ollama_check(config):
 
 @app.command()
 def log(
-    note: str | None = typer.Argument(
-        None, help="Quick note (or omit to open $EDITOR)"
-    ),
-    config_path: Annotated[
-        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
-    ] = None,
-    date_str: str | None = typer.Option(
-        None, "--date", "-d", help="Entry date (YYYY-MM-DD)"
-    ),
-    model_name: str | None = typer.Option(
-        None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"
-    ),
+    note: str | None = typer.Argument(None, help="Quick note (or omit to open $EDITOR)"),
+    config_path: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config.toml")] = None,
+    date_str: str | None = typer.Option(None, "--date", "-d", help="Entry date (YYYY-MM-DD)"),
+    model_name: str | None = typer.Option(None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"),
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
@@ -91,13 +83,9 @@ def log(
     ),
     no_llm: Annotated[
         bool,
-        typer.Option(
-            "--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run."
-        ),
+        typer.Option("--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run."),
     ] = False,
-    verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Show full structured output"
-    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full structured output"),
 ):
     """Log a new journal entry from text."""
     config = _get_config(config_path)
@@ -176,18 +164,10 @@ def log(
 @app.command()
 def photo(
     image_path: Annotated[Path, typer.Argument(help="Path to the photo")],
-    note: str | None = typer.Option(
-        None, "--note", help="Optional text note to merge"
-    ),
-    config_path: Annotated[
-        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
-    ] = None,
-    date_str: str | None = typer.Option(
-        None, "--date", "-d", help="Entry date (YYYY-MM-DD)"
-    ),
-    model_name: str | None = typer.Option(
-        None, "--model", "-m", help="Override Ollama vision model (e.g. llava:13b)"
-    ),
+    note: str | None = typer.Option(None, "--note", help="Optional text note to merge"),
+    config_path: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config.toml")] = None,
+    date_str: str | None = typer.Option(None, "--date", "-d", help="Entry date (YYYY-MM-DD)"),
+    model_name: str | None = typer.Option(None, "--model", "-m", help="Override Ollama vision model (e.g. llava:13b)"),
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
@@ -196,9 +176,7 @@ def photo(
     ),
     no_llm: Annotated[
         bool,
-        typer.Option(
-            "--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run."
-        ),
+        typer.Option("--no-llm", help="Skip LLM call, use mock entry. Implies --dry-run."),
     ] = False,
 ):
     """Add a photo (and optional note) to today's entry."""
@@ -273,9 +251,7 @@ def photo(
 @app.command()
 def recent(
     weeks: int = typer.Option(1, "--weeks", "-w", help="Number of weeks to show"),
-    config_path: Annotated[
-        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
-    ] = None,
+    config_path: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config.toml")] = None,
 ):
     """Show a compact timeline of recent entries."""
     config = _get_config(config_path)
@@ -312,18 +288,10 @@ def recent(
 @app.command()
 def search(
     query: str | None = typer.Argument(None, help="Full-text search query"),
-    tag: str | None = typer.Option(
-        None, "--tag", "-t", help="Filter by milestone tag"
-    ),
-    after: str | None = typer.Option(
-        None, "--after", "-a", help="Only entries after date (YYYY-MM-DD)"
-    ),
-    before: str | None = typer.Option(
-        None, "--before", "-b", help="Only entries before date (YYYY-MM-DD)"
-    ),
-    config_path: Annotated[
-        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
-    ] = None,
+    tag: str | None = typer.Option(None, "--tag", "-t", help="Filter by milestone tag"),
+    after: str | None = typer.Option(None, "--after", "-a", help="Only entries after date (YYYY-MM-DD)"),
+    before: str | None = typer.Option(None, "--before", "-b", help="Only entries before date (YYYY-MM-DD)"),
+    config_path: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config.toml")] = None,
 ):
     """Search journal entries by text and/or tag."""
     config = _get_config(config_path)
@@ -355,9 +323,7 @@ def search(
     for entry in results:
         emoji = MOOD_EMOJI[entry.mood]
         tags_str = ", ".join(t.value for t in entry.milestone_tags)
-        console.print(
-            f"[bold cyan]{entry.date.isoformat()}[/]  {emoji}  [dim]{tags_str}[/]"
-        )
+        console.print(f"[bold cyan]{entry.date.isoformat()}[/]  {emoji}  [dim]{tags_str}[/]")
         console.print(f"  {entry.narrative.split(chr(10))[0][:80]}")
         console.print()
 
@@ -366,12 +332,8 @@ def search(
 
 @app.command()
 def view(
-    entry_date_str: str | None = typer.Argument(
-        None, help="Date to view (YYYY-MM-DD), defaults to today"
-    ),
-    config_path: Annotated[
-        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
-    ] = None,
+    entry_date_str: str | None = typer.Argument(None, help="Date to view (YYYY-MM-DD), defaults to today"),
+    config_path: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config.toml")] = None,
 ):
     """Pretty-print a single day's journal entry."""
     config = _get_config(config_path)
@@ -406,9 +368,7 @@ def view(
 def summary(
     week: bool = typer.Option(False, "--week", "-w", help="Summarize current week"),
     month: bool = typer.Option(False, "--month", help="Summarize current month"),
-    model_name: str | None = typer.Option(
-        None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"
-    ),
+    model_name: str | None = typer.Option(None, "--model", "-m", help="Override Ollama model (e.g. qwen2.5:7b)"),
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
@@ -417,13 +377,9 @@ def summary(
     ),
     no_llm: Annotated[
         bool,
-        typer.Option(
-            "--no-llm", help="Skip LLM call, use mock summary. Implies --dry-run."
-        ),
+        typer.Option("--no-llm", help="Skip LLM call, use mock summary. Implies --dry-run."),
     ] = False,
-    config_path: Annotated[
-        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
-    ] = None,
+    config_path: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config.toml")] = None,
 ):
     """Generate a weekly or monthly summary."""
     if not week and not month:
@@ -475,21 +431,15 @@ def summary(
 
 @app.command()
 def inbox(
-    config_path: Annotated[
-        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
-    ] = None,
-    model_name: str | None = typer.Option(
-        None, "--model", "-m", help="Override Ollama vision model (e.g. moondream)"
-    ),
+    config_path: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config.toml")] = None,
+    model_name: str | None = typer.Option(None, "--model", "-m", help="Override Ollama vision model (e.g. moondream)"),
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
         "-n",
         help="Show what would be processed without making changes",
     ),
-    verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Print photo descriptions as they're generated"
-    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Print photo descriptions as they're generated"),
 ):
     """Process all photos in the inbox folder and file them into the journal."""
     config = _get_config(config_path)
@@ -508,30 +458,22 @@ def inbox(
     from .inbox import process_inbox
 
     model = model_from_name(model_name, config) if model_name else None
-    processed, skipped = process_inbox(
-        config, dry_run=dry_run, verbose=verbose, model=model
-    )
+    processed, skipped = process_inbox(config, dry_run=dry_run, verbose=verbose, model=model)
 
     suffix = " (dry run)" if dry_run else ""
-    console.print(
-        f"\n[bold]Done{suffix}.[/] Processed: {processed}, Skipped: {skipped}"
-    )
+    console.print(f"\n[bold]Done{suffix}.[/] Processed: {processed}, Skipped: {skipped}")
 
 
 @app.command()
 def serve(
     port: int = typer.Option(5555, "--port", "-p", help="Port to listen on"),
-    config_path: Annotated[
-        Path | None, typer.Option("--config", "-c", help="Path to config.toml")
-    ] = None,
+    config_path: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config.toml")] = None,
 ):
     """Start the local web viewer."""
     config = _get_config(config_path)
     actual_port = port or config.web.port
 
-    console.print(
-        f"[bold green]pebble web viewer[/] starting at [cyan]http://localhost:{actual_port}[/]"
-    )
+    console.print(f"[bold green]pebble web viewer[/] starting at [cyan]http://localhost:{actual_port}[/]")
     console.print("[dim]Press Ctrl+C to stop.[/]")
 
     from pebble.web.app import create_app

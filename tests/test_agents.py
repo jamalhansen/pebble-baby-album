@@ -1,4 +1,5 @@
 """Tests for agents.py — uses MockProvider to avoid real Ollama calls."""
+
 import asyncio
 from datetime import date
 from pathlib import Path
@@ -55,6 +56,7 @@ class TestLogEntry:
         mock_llm = MockProvider(response=self._meta_response())
         with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
+
             entry = asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
         assert entry.date == entry_date
@@ -68,6 +70,7 @@ class TestLogEntry:
         mock_llm = MockProvider(response=self._meta_response())
         with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
+
             entry = asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
         assert entry.narrative == "grabbed my finger"
@@ -79,6 +82,7 @@ class TestLogEntry:
         mock_llm = MockProvider(response=self._meta_response())
         with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
+
             entry = asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
         assert MilestoneTag.MOTOR_SKILLS in entry.milestone_tags
@@ -91,6 +95,7 @@ class TestLogEntry:
         mock_llm = MockProvider(response=self._meta_response())
         with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
+
             asyncio.run(agents.log_entry("grabbed my finger", entry_date, config))
 
         _system, user = mock_llm.calls[0]
@@ -106,6 +111,7 @@ class TestDescribePhoto:
         image_path.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
 
         from pebble.models import PhotoAnalysis
+
         fixed_analysis = PhotoAnalysis(
             description="Baby lying on a white blanket, smiling at camera.",
         )
@@ -113,9 +119,12 @@ class TestDescribePhoto:
         dummy_jpeg = b"\xff\xd8\xff\xe0" + b"\x00" * 16
 
         mock_llm = MockProvider(response=fixed_analysis.model_dump_json())
-        with patch("pebble.agents._get_provider", return_value=mock_llm), \
-             patch("pebble.agents._to_jpeg_bytes", return_value=(dummy_jpeg, (3024, 4032), (768, 1024))):
+        with (
+            patch("pebble.agents._get_provider", return_value=mock_llm),
+            patch("pebble.agents._to_jpeg_bytes", return_value=(dummy_jpeg, (3024, 4032), (768, 1024))),
+        ):
             from pebble import agents
+
             photo = asyncio.run(agents.describe_photo(image_path, config))
 
         assert photo.file_path == str(image_path)
@@ -141,9 +150,8 @@ class TestSummarizeEntries:
         mock_llm = MockProvider(response=fixed_summary.model_dump_json())
         with patch("pebble.agents._get_provider", return_value=mock_llm):
             from pebble import agents
-            summary = asyncio.run(
-                agents.summarize_entries(entries, week_start, week_end, config)
-            )
+
+            summary = asyncio.run(agents.summarize_entries(entries, week_start, week_end, config))
 
         assert summary.week_start == week_start
         assert summary.week_end == week_end

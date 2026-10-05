@@ -1,4 +1,5 @@
 """Photo inbox — scan a folder, describe each photo, file it into the journal."""
+
 import asyncio
 import io
 from collections.abc import Iterator
@@ -52,10 +53,7 @@ def iter_inbox(inbox_dir: Path) -> Iterator[Path]:
     """Yield image files in the inbox directory, sorted by filename."""
     if not inbox_dir.exists():
         return
-    paths = [
-        p for p in inbox_dir.iterdir()
-        if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
-    ]
+    paths = [p for p in inbox_dir.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS]
     yield from sorted(paths, key=lambda p: p.name)
 
 
