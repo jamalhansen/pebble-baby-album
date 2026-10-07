@@ -122,7 +122,7 @@ def _to_jpeg_bytes(image_path: Path) -> tuple[bytes, tuple[int, int], tuple[int,
     with Image.open(image_path) as img:
         original_size = img.size
         img = img.convert("RGB")
-        img.thumbnail((_MAX_VISION_PX, _MAX_VISION_PX), Image.LANCZOS)
+        img.thumbnail((_MAX_VISION_PX, _MAX_VISION_PX), Image.Resampling.LANCZOS)
         final_size = img.size
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85)

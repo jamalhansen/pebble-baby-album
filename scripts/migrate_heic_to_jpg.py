@@ -39,7 +39,7 @@ def _convert(src: Path, dest: Path) -> None:
     """Open src (any PIL-supported format incl. HEIC), save as JPEG to dest."""
     with Image.open(src) as img:
         img = img.convert("RGB")
-        img.thumbnail((_MAX_PX, _MAX_PX), Image.LANCZOS)
+        img.thumbnail((_MAX_PX, _MAX_PX), Image.Resampling.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85)
     dest.write_bytes(buf.getvalue())
@@ -66,7 +66,7 @@ def _update_journal(journal_dir: Path, old_path: Path, new_path: Path, dry_run: 
 def main(
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would change, don't write anything."),
     config_path: Annotated[
-        typer.FileText, typer.Option("--config", "-C", help="Path to config.toml (overrides auto-detection).")
+        typer.FileText | None, typer.Option("--config", "-C", help="Path to config.toml (overrides auto-detection).")
     ] = None,
 ) -> None:
     config = load_config(Path(config_path.name) if config_path else None)

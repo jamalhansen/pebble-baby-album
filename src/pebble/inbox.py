@@ -61,7 +61,7 @@ def _save_as_jpeg(src: Path, dest: Path) -> None:
     """Convert src to a 1024px-capped JPEG and write it to dest."""
     with Image.open(src) as img:
         img = img.convert("RGB")
-        img.thumbnail((_MAX_VISION_PX, _MAX_VISION_PX), Image.LANCZOS)
+        img.thumbnail((_MAX_VISION_PX, _MAX_VISION_PX), Image.Resampling.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85)
     dest.write_bytes(buf.getvalue())

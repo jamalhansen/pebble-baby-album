@@ -66,9 +66,11 @@ def _parse_entry(path: Path) -> JournalEntry | None:
 
     meta = post.metadata
     entry_date = date.fromisoformat(str(meta.get("date", path.stem)))
-    age_weeks = int(meta.get("age_weeks", 0))
+    age_weeks = int(str(meta.get("age_weeks", 0)))
 
     raw_tags = meta.get("milestone_tags", [])
+    if not isinstance(raw_tags, list):
+        raw_tags = [raw_tags] if raw_tags else []
     milestone_tags = []
     for t in raw_tags:
         try:
